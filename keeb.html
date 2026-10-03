@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>keeb tester</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;800&display=swap">
+<style>
+:root{
+  color-scheme:light;
+  --bg:#fbf1c7;--bg-h:#f9f5d7;--bg1:#ebdbb2;--bg2:#d5c4a1;--bg3:#bdae93;
+  --fg:#3c3836;--fg3:#7c6f64;--red:#cc241d;--yellow:#d79921;--green:#98971a;
+  --aqua:#689d6a;--orange:#d65d04;--blue:#458588;--purple:#b16286;
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:'JetBrains Mono',ui-monospace,Menlo,Consolas,monospace;min-height:100vh;
+  background-image:radial-gradient(var(--bg2) 1.2px,transparent 1.2px);background-size:22px 22px}
+.app{max-width:1180px;margin:0 auto;padding:20px 14px 40px}
+.win{background:var(--bg-h);border:3px solid var(--fg);border-radius:22px;box-shadow:8px 8px 0 var(--bg3);overflow:hidden}
+.bar{display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--bg1);border-bottom:3px solid var(--fg);flex-wrap:wrap}
+.dots{display:flex;gap:7px}.dots i{width:14px;height:14px;border-radius:50%;border:2px solid var(--fg);display:block}
+.dots i:nth-child(1){background:var(--red)}.dots i:nth-child(2){background:var(--yellow)}.dots i:nth-child(3){background:var(--green)}
+.title{font-weight:800;font-size:15px;flex:1;min-width:120px}
+.music{display:flex;align-items:center;gap:8px;font-size:12px}
+button{font:inherit;color:var(--fg);cursor:pointer}
+.btn{background:var(--bg-h);border:2px solid var(--fg);border-radius:999px;padding:6px 13px;font-size:12px;font-weight:600;box-shadow:0 3px 0 var(--fg);transition:transform .08s,box-shadow .08s}
+.btn:active{transform:translateY(3px);box-shadow:none}
+.btn.on{background:var(--aqua);color:var(--bg-h)}
+input[type=range]{accent-color:var(--orange);width:80px}
+:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+.body{padding:18px 18px 22px}
+.top{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-bottom:16px}
+.face{display:flex;align-items:center;gap:10px}
+.mascot{font-size:22px;font-weight:800;background:var(--yellow);color:var(--fg);border:3px solid var(--fg);border-radius:50% 50% 46% 46%;padding:8px 12px;white-space:nowrap}
+.say{background:var(--bg-h);border:2px solid var(--fg);border-radius:14px;padding:7px 12px;font-size:13px;position:relative}
+.say::before{content:"";position:absolute;left:-8px;top:50%;width:12px;height:12px;background:var(--bg-h);border-left:2px solid var(--fg);border-bottom:2px solid var(--fg);transform:translateY(-50%) rotate(45deg)}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-left:auto}
+.chip{background:var(--bg-h);border:2px solid var(--fg);border-radius:12px;padding:6px 12px;font-size:13px;font-weight:600;box-shadow:0 3px 0 var(--fg)}
+.chip[aria-pressed=true]{background:var(--purple);color:var(--bg-h);transform:translateY(2px);box-shadow:0 1px 0 var(--fg)}
+.wrap{overflow-x:auto;padding:6px 0 14px}
+.case{position:relative;margin:0 auto;background:var(--bg1);border:3px solid var(--fg);border-radius:20px;padding:12px;width:max-content;max-width:none}
+.board{position:relative;margin:0}
+.k{position:absolute;display:flex;align-items:center;justify-content:center;background:var(--bg-h);color:var(--fg);
+  border:2px solid var(--bg3);border-bottom-width:5px;border-radius:calc(var(--u)*.2);font-size:max(8px,calc(var(--u)*.25));font-weight:600;
+  user-select:none;transition:background .1s,transform .06s;overflow:hidden}
+.k.t{background:#d8dc8c;border-color:var(--green);color:var(--fg)}
+.k.d{background:var(--orange);border-color:#9d4400;color:var(--bg-h);transform:translateY(3px);border-bottom-width:2px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:6px}
+.st{background:var(--bg-h);border:2px solid var(--fg);border-radius:14px;padding:9px 12px}
+.st small{color:var(--fg3);font-size:11px;display:block}
+.st b{font-size:17px;word-break:break-all}
+.bagbar{height:10px;border:2px solid var(--fg);border-radius:99px;background:var(--bg-h);overflow:hidden;margin-top:12px}
+.bagbar i{display:block;height:100%;width:0;background:var(--green);transition:width .2s}
+.hint{margin:14px 2px 0;color:var(--fg3);font-size:12px}
+</style>
+</head>
+<body>
+<div class="app">
+ <div class="win">
+  <div class="bar">
+   <div class="dots"><i></i><i></i><i></i></div>
+   <div class="title">keeb tester ♡</div>
+   <div class="music">
+    <button class="btn" id="mbtn">♪ music off</button>
+    <input type="range" id="vol" min="0" max="100" value="55" aria-label="Music volume">
+   </div>
+  </div>
+  <div class="body">
+   <div class="top">
+    <div class="face"><div class="mascot" id="mas">(•‿•)</div><div class="say" id="say">press any key!</div></div>
+    <div class="chips" id="chips" role="group" aria-label="Keyboard layout"></div>
+   </div>
+   <div class="wrap" id="wrap"><div class="case"><div class="board" id="board"></div></div></div>
+   <div class="bagbar"><i id="bar"></i></div>
+   <div class="stats" style="margin-top:12px">
+    <div class="st"><small>keys tested</small><b id="s1">0 / 0</b></div>
+    <div class="st"><small>total presses</small><b id="s2">0</b></div>
+    <div class="st"><small>held right now</small><b id="s3">0</b></div>
+    <div class="st"><small>last key</small><b id="s4">-</b></div>
+    <div class="st"><small>key name</small><b id="s5">-</b></div>
+   </div>
+   <div style="margin-top:14px"><button class="btn" id="reset">reset tested keys</button></div>
+   <p class="hint">Keys turn orange while held and green once tested. Browser shortcuts like Ctrl+W or Alt+F4 can't be caught.</p>
+  </div>
+ </div>
+</div>
+<script>
+const K=(code,x,y,w=1,h=1)=>({code,x,y,w,h});
+const L=s=>s.split('').map(c=>'Key'+c);
+const D='1234567890'.split('').map(d=>'Digit'+d);
+const row=(y,x0,list)=>{let x=x0;return list.map(it=>{const[c,w=1]=Array.isArray(it)?it:[it];const k=K(c,x,y,w);x+=w;return k})};
+const fkeys=(x,y,a,b)=>{const r=[];for(let i=a;i<=b;i++)r.push(K('F'+i,x+i-a,y));return r};
+const body=(y,sr)=>[
+ ...row(y,0,['Backquote',...D,'Minus','Equal',['Backspace',2]]),
+ ...row(y+1,0,[['Tab',1.5],...L('QWERTYUIOP'),'BracketLeft','BracketRight',['Backslash',1.5]]),
+ ...row(y+2,0,[['CapsLock',1.75],...L('ASDFGHJKL'),'Semicolon','Quote',['Enter',2.25]]),
+ ...row(y+3,0,[['ShiftLeft',2.25],...L('ZXCVBNM'),'Comma','Period','Slash',['ShiftRight',sr]])];
+const bottomFull=y=>row(y,0,[['ControlLeft',1.25],['MetaLeft',1.25],['AltLeft',1.25],['Space',6.25],['AltRight',1.25],['MetaRight',1.25],['ContextMenu',1.25],['ControlRight',1.25]]);
+const bottomCompact=y=>row(y,0,[['ControlLeft',1.25],['MetaLeft',1.25],['AltLeft',1.25],['Space',6.25],'AltRight','ControlRight']);
+const compactRight=y=>[...['Delete','PageUp','PageDown','End'].map((c,i)=>K(c,15,y+i)),
+ K('ArrowUp',14,y+3),K('ArrowLeft',13,y+4),K('ArrowDown',14,y+4),K('ArrowRight',15,y+4)];
+const np=(x,y)=>[
+ K('NumLock',x,y),K('NumpadDivide',x+1,y),K('NumpadMultiply',x+2,y),K('NumpadSubtract',x+3,y),
+ K('Numpad7',x,y+1),K('Numpad8',x+1,y+1),K('Numpad9',x+2,y+1),K('NumpadAdd',x+3,y+1,1,2),
+ K('Numpad4',x,y+2),K('Numpad5',x+1,y+2),K('Numpad6',x+2,y+2),
+ K('Numpad1',x,y+3),K('Numpad2',x+1,y+3),K('Numpad3',x+2,y+3),K('NumpadEnter',x+3,y+3,1,2),
+ K('Numpad0',x,y+4,2),K('NumpadDecimal',x+2,y+4)];
+const fRowCompact=()=>[K('Escape',0,0),...fkeys(1,0,1,12),K('PrintScreen',13,0),K('Insert',14,0),K('Home',15,0)];
+const tklBase=()=>[
+ K('Escape',0,0),...fkeys(2,0,1,4),...fkeys(6.5,0,5,8),...fkeys(11,0,9,12),
+ K('PrintScreen',15.25,0),K('ScrollLock',16.25,0),K('Pause',17.25,0),
+ ...body(1.5,2.75),...bottomFull(5.5),
+ ...['Insert','Home','PageUp','Delete','End','PageDown'].map((c,i)=>K(c,15.25+i%3,1.5+Math.floor(i/3))),
+ K('ArrowUp',16.25,4.5),K('ArrowLeft',15.25,5.5),K('ArrowDown',16.25,5.5),K('ArrowRight',17.25,5.5)];
+const LAYOUTS={
+ '60%':()=>[...body(0,2.75),...bottomFull(4)],
+ '65%':()=>[...body(0,1.75),...bottomCompact(4),...compactRight(0)],
+ '75%':()=>[...fRowCompact(),...body(1,1.75),...bottomCompact(5),...compactRight(1)],
+ 'TKL 80%':tklBase,
+ '98%':()=>[...fRowCompact(),...body(1,1.75),...bottomCompact(5),...compactRight(1),...np(16,1)],
+ '100%':()=>[...tklBase(),...np(18.5,1.5)]
+};
+const M={Backquote:'`',Minus:'-',Equal:'=',BracketLeft:'[',BracketRight:']',Backslash:'\\',Semicolon:';',Quote:"'",Comma:',',Period:'.',Slash:'/',
+ Backspace:'⌫',Tab:'Tab',CapsLock:'Caps',Enter:'Enter',ShiftLeft:'Shift',ShiftRight:'Shift',ControlLeft:'Ctrl',ControlRight:'Ctrl',AltLeft:'Alt',AltRight:'Alt',
+ MetaLeft:'Win',MetaRight:'Win',ContextMenu:'Menu',Space:'',Escape:'Esc',ArrowUp:'↑',ArrowDown:'↓',ArrowLeft:'←',ArrowRight:'→',Delete:'Del',Insert:'Ins',
+ PageUp:'PgUp',PageDown:'PgDn',PrintScreen:'PrtSc',ScrollLock:'ScrLk',NumLock:'Num',NumpadDivide:'/',NumpadMultiply:'*',NumpadSubtract:'-',NumpadAdd:'+',
+ NumpadEnter:'Ent',NumpadDecimal:'.'};
+const label=c=>c in M?M[c]:c.startsWith('Key')?c[3]:c.startsWith('Digit')?c[5]:c.startsWith('Numpad')?c.slice(6):c;
+const $=id=>document.getElementById(id);
+const board=$('board'),wrap=$('wrap');
+let cur='100%',keys=[],W=1,H=1,presses=0;
+const tested=new Set(),held=new Set();
+function build(name){
+ cur=name;keys=LAYOUTS[name]();
+ W=Math.max(...keys.map(k=>k.x+k.w));H=Math.max(...keys.map(k=>k.y+k.h));
+ board.innerHTML='';
+ keys.forEach(k=>{const e=document.createElement('div');e.className='k';e.dataset.c=k.code;e.textContent=label(k.code);
+  e.style.cssText=`left:calc(var(--u)*${k.x} + 2px);top:calc(var(--u)*${k.y} + 2px);width:calc(var(--u)*${k.w} - 4px);height:calc(var(--u)*${k.h} - 4px)`;
+  k.el=e;board.appendChild(e)});
+ document.querySelectorAll('.chip').forEach(c=>c.setAttribute('aria-pressed',c.dataset.n===name));
+ fit();refresh();
+}
+function fit(){
+ const avail=wrap.clientWidth-52;
+ const u=Math.max(24,Math.min(56,avail/W));
+ board.style.setProperty('--u',u+'px');
+ board.style.width=W*u+'px';board.style.height=H*u+'px';
+}
+function refresh(){
+ keys.forEach(k=>{k.el.classList.toggle('t',tested.has(k.code));k.el.classList.toggle('d',held.has(k.code))});
+ const n=keys.filter(k=>tested.has(k.code)).length;
+ $('s1').textContent=n+' / '+keys.length;$('s2').textContent=presses;$('s3').textContent=held.size;
+ $('bar').style.width=(100*n/keys.length)+'%';
+ if(n===keys.length&&n>0){$('mas').textContent='(★‿★)';$('say').textContent='every key works. nice board!'}
+}
+const chips=$('chips');
+Object.keys(LAYOUTS).forEach(n=>{const b=document.createElement('button');b.className='chip';b.textContent=n;b.dataset.n=n;
+ b.onclick=()=>{build(n);b.blur()};chips.appendChild(b)});
+addEventListener('resize',fit);
+addEventListener('keydown',e=>{
+ if(e.target.type==='range')e.target.blur();
+ e.preventDefault();
+ const c=e.code||e.key;
+ if(!e.repeat){presses++;held.add(c);tested.add(c);
+  $('s4').textContent=c;$('s5').textContent=e.key===' '?'Space':e.key;
+  $('mas').textContent='(≧▽≦)';
+  const inL=keys.some(k=>k.code===c);
+  $('say').textContent=inL?'got '+c+'!':c+' isn\'t on this layout, but it works!';
+  refresh()}
+});
+addEventListener('keyup',e=>{e.preventDefault();held.delete(e.code||e.key);if(!held.size)$('mas').textContent='(•‿•)';refresh()});
+addEventListener('blur',()=>{held.clear();refresh()});
+$('reset').onclick=()=>{tested.clear();held.clear();presses=0;$('s4').textContent='-';$('s5').textContent='-';$('mas').textContent='(•‿•)';$('say').textContent='fresh start, press any key!';refresh();$('reset').blur()};
+
+/* ---- ambient sine-wave music ---- */
+const CH=[[48,55,59,64],[45,52,55,60],[41,48,52,57],[43,50,55,59]];
+let ac,master,bus,timer,nextT=0,step=0,playing=false,wanted=true,vol=.55;
+const mf=m=>440*Math.pow(2,(m-69)/12);
+function tone(m,t,dur,g,att){
+ const o=ac.createOscillator(),e=ac.createGain();
+ o.type='sine';o.frequency.value=mf(m);
+ e.gain.setValueAtTime(0.0001,t);e.gain.linearRampToValueAtTime(g,t+att);e.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+ o.connect(e);e.connect(bus);o.start(t);o.stop(t+dur+.1);
+}
+function sched(){
+ while(nextT<ac.currentTime+.6){
+  const ch=CH[Math.floor(step/8)%4];
+  if(step%8===0)ch.forEach((m,i)=>tone(m,nextT,5.2,i?.05:.08,1.4));
+  if(Math.random()<.75){const m=ch[Math.floor(Math.random()*4)]+12*(1+Math.floor(Math.random()*2));tone(m,nextT,2.2,.07,.02)}
+  nextT+=.5;step++;
+ }
+}
+function startMusic(){
+ if(!ac){
+  ac=new (window.AudioContext||window.webkitAudioContext)();
+  master=ac.createGain();master.gain.value=vol*.7;master.connect(ac.destination);
+  bus=ac.createGain();bus.connect(master);
+  const d=ac.createDelay(1),fb=ac.createGain();d.delayTime.value=.375;fb.gain.value=.38;
+  bus.connect(d);d.connect(fb);fb.connect(d);d.connect(master);
+ }
+ ac.resume();nextT=ac.currentTime+.1;clearInterval(timer);timer=setInterval(sched,150);
+ playing=true;$('mbtn').textContent='♪ music on';$('mbtn').classList.add('on');
+}
+function stopMusic(){
+ clearInterval(timer);if(ac)ac.suspend();
+ playing=false;$('mbtn').textContent='♪ music off';$('mbtn').classList.remove('on');
+}
+$('mbtn').onclick=()=>{wanted=false;playing?stopMusic():startMusic();$('mbtn').blur()};
+$('vol').oninput=e=>{vol=e.target.value/100;if(master)master.gain.value=vol*.7};
+const first=()=>{if(wanted&&!playing)try{startMusic()}catch(_){}removeEventListener('pointerdown',first);removeEventListener('keydown',first)};
+addEventListener('pointerdown',first);addEventListener('keydown',first);
+
+build('100%');
+</script>
+</body>
+</html>
