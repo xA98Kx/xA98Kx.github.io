@@ -24,19 +24,27 @@
         margin-top: 120px;
         margin-bottom: 0;
     }
-    .big{ font-size: clamp(72px, 16vw, 130px); line-height: 1; font-weight: 800; }
+    .big{ font-size: clamp(72px, 16vw, 130px); line-height: 1; font-weight: 800; color: var(--name-color); }
+    .cursor{ color: var(--name-color); }
     .cursor{ display:inline-block; font-weight:800; animation: blink 1s steps(1, end) infinite; }
     @keyframes blink{ 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
     .yt{
+        box-sizing: border-box;
+        width: 200px;
+        height: 42px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
         font-family: 'JetBrains Mono', monospace;
-        font-size: large;
+        font-size: .82rem;
+        font-weight: 600;
         border: none;
-        padding: 10px;
+        padding: 0 10px;
         border-radius: 10px;
         background-color: #62629b;
         color: aliceblue;
         text-decoration: none;
-        display: inline-block;
+        white-space: nowrap;
     }
     .yt:hover{
         cursor: pointer;
@@ -96,7 +104,7 @@
         background: #2a2a45;
     }
     .card-actions{ display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
-    .play-game, .itch-game{ display:inline-block; padding:8px 11px; border-radius:8px; font:600 .8rem 'JetBrains Mono', monospace; text-decoration:none; }
+    .play-game, .itch-game{ box-sizing:border-box; width:126px; height:36px; display:inline-flex; align-items:center; justify-content:center; border-radius:8px; font:600 .8rem 'JetBrains Mono', monospace; text-decoration:none; white-space:nowrap; }
     .play-game{ background:#a6e3a1; color:#11111b; }
     .itch-game{ background:#cba6f7; color:#11111b; }
     .play-game:hover, .itch-game:hover{ opacity:.82; }
@@ -159,9 +167,9 @@
         width: 64px;
         height: 40px;
         transform: translateY(105%);
-        animation: peek 60s ease-out 3s infinite;
+        animation: peek 10.4s ease-out 3s infinite;
     }
-    .pupils{ animation: look 60s ease-in-out 3s infinite; }
+    .pupils{ animation: look 10.4s ease-in-out 3s infinite; }
     .shiny{ position: relative; overflow: hidden; }
     .shiny::after{
         content: "";
@@ -177,7 +185,7 @@
             transparent 58% 66%,
             rgba(255,255,255,.55) 66% 76%,
             transparent 76%);
-        animation: sheen 60s ease-in-out 3s infinite;
+        animation: sheen 10.4s ease-in-out 3s infinite;
     }
     .shiny::before{
         content: "\2726";
@@ -188,29 +196,31 @@
         color: #fff;
         opacity: 0;
         pointer-events: none;
-        animation: twinkle 60s ease-out 3s infinite;
+        animation: twinkle 10.4s ease-out 3s infinite;
     }
+    /* The cat keeps the original movement timing; only the idle period is shortened.
+       It is visible for the same ~5.4s sequence, then stays hidden for ~5s. */
     @keyframes peek{
-        0%   { transform: translateY(105%); }
-        1.5% { transform: translateY(-4%); }
-        2%   { transform: translateY(0); }
-        7.5% { transform: translateY(0); }
-        9%   { transform: translateY(105%); }
-        100% { transform: translateY(105%); }
+        0%       { transform: translateY(105%); }
+        8.654%   { transform: translateY(-4%); }
+        11.538%  { transform: translateY(0); }
+        43.269%  { transform: translateY(0); }
+        51.923%  { transform: translateY(105%); }
+        100%     { transform: translateY(105%); }
     }
     @keyframes look{
-        0%, 3%   { transform: translate(0, 0); }
-        4%, 7.5% { transform: translate(0, 2px); }
-        9%, 100% { transform: translate(0, 0); }
+        0%, 17.308%  { transform: translate(0, 0); }
+        23.077%, 43.269% { transform: translate(0, 2px); }
+        51.923%, 100% { transform: translate(0, 0); }
     }
     @keyframes sheen{
-        0%, 4.5% { left: -70%; }
-        6.5%     { left: 130%; }
-        100%     { left: 130%; }
+        0%, 25.962% { left: -70%; }
+        37.5%       { left: 130%; }
+        100%        { left: 130%; }
     }
     @keyframes twinkle{
-        0%, 5.4%, 7.4%, 100% { opacity: 0; transform: scale(0) rotate(0deg); }
-        6.2%                 { opacity: 1; transform: scale(1.3) rotate(25deg); }
+        0%, 31.154%, 71.154%, 100% { opacity: 0; transform: scale(0) rotate(0deg); }
+        35%                        { opacity: 1; transform: scale(1.3) rotate(25deg); }
     }
     @media (prefers-reduced-motion: reduce){
         .cat, .pupils, .shiny::after, .shiny::before{ animation: none; }
@@ -225,9 +235,9 @@
     <p class="tag">game dev and fellow gamer. i make games in godot and videos about making them.</p>
 
     <p class="links">
-        <a class="yt" href="https://www.youtube.com/@a98k">YouTube</a>
+        <a class="yt" href="https://www.youtube.com/@a98k">youtube</a>
         <a class="yt" href="https://a98k.itch.io">itch.io</a>
-        <a class="yt" href="https://twitter.com/a98k_dev">@a98k_dev</a>
+        <a class="yt" href="https://x.com/a98k_dev">@a98k_dev</a>
         <span class="kwrap">
             <span class="peek">
                 <svg class="cat" viewBox="0 0 64 40" aria-hidden="true">
@@ -255,7 +265,7 @@
                     <path d="M17 36.5v2.5M21 36.5v2.5M43 36.5v2.5M47 36.5v2.5" stroke="#3b2f4a" stroke-width="1" stroke-linecap="round"/>
                 </svg>
             </span>
-            <a class="yt shiny" href="keeb">Keeb tester</a>
+            <a class="yt shiny" href="keeb">keeb tester</a>
         </span>
     </p>
 
@@ -264,7 +274,7 @@
         <div class="card">
             <img src="https://img.itch.zone/aW1nLzEwMzYwNTYxLnBuZw==/508x254%23mb/pY2KYj.png" alt="Disappointed NPC cover art" loading="lazy">
             <div class="cb">
-                <h3>Disappointed NPC</h3>
+                <h3>disappointed npc</h3>
                 <p>an experimental platformer prototype. arrow keys to move, enter on a door for the next level. don't press space.</p>
                 <span class="meta">godot &middot; play in browser &middot; prototype</span>
                 <span class="card-actions">
@@ -276,7 +286,7 @@
         <a class="card" href="https://higgaion-games.itch.io/rumbo">
             <img src="https://img.itch.zone/aW1nLzEyNDI1NDUzLnBuZw==/508x254%23mb/iaz%2F61.png" alt="Rumbo cover art" loading="lazy">
             <div class="cb">
-                <h3>Rumbo</h3>
+                <h3>rumbo</h3>
                 <p>a survival adventure made for Adventure Jam 2023 by 14 devs who passed the project along without talking to each other. i was one of the 14.</p>
                 <span class="meta">godot &middot; play in browser &middot; open source</span>
             </div>
@@ -287,7 +297,7 @@
     <div class="video">
         <iframe src="https://www.youtube.com/embed/videoseries?list=UUpPCMjessfsjV8Q2v9FLjcA" title="Latest a98k videos" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
     </div>
-    <p class="center"><a class="yt" href="https://www.youtube.com/@a98k/videos">All videos on YouTube</a></p>
+    <p class="center"><a class="yt" href="https://www.youtube.com/@a98k/videos">all videos on youtube</a></p>
 
     <footer>made by hand, no frameworks</footer>
 </main>
@@ -312,9 +322,13 @@
         '#f2cdcd'  // Flamingo
     ];
 
-    const root = document.documentElement;
-    const nameColor = nameColors[Math.floor(Math.random() * nameColors.length)];
-    root.style.setProperty('--name-color', nameColor);
+    const setRandomNameColor = () => {
+        const index = Math.floor(Math.random() * nameColors.length);
+        document.documentElement.style.setProperty('--name-color', nameColors[index]);
+    };
+
+    setRandomNameColor();
+    window.addEventListener('pageshow', setRandomNameColor);
 
 
     const button = document.getElementById('audio-toggle');
