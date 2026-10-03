@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>links | a98k</title>
+    <meta name="description" content="all the a98k links: games, videos, and socials.">
+    <meta property="og:title" content="links | a98k">
+    <meta property="og:description" content="games, videos, and socials from a98k.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎮</text></svg>">
+    <style>
+        :root{
+            color-scheme: dark;
+            font-family: 'JetBrains Mono', monospace;
+            color: aliceblue;
+            background: #11111b;
+        }
+        *{ box-sizing: border-box; }
+        body{
+            min-height: 100vh;
+            margin: 0;
+            padding: 40px 18px;
+            background-color: #11111b;
+            background-image:
+                radial-gradient(circle at 1px 1px, rgba(205,214,244,.075) 1px, transparent 1.2px),
+                linear-gradient(to bottom, rgba(17,17,27,.94), rgba(86,76,129,.96));
+            background-size: 24px 24px, 100% 100%;
+            background-attachment: fixed;
+            background-repeat: repeat, no-repeat;
+        }
+        main{ width: min(100%, 560px); margin: 0 auto; }
+        .profile{ text-align: center; margin: 48px 0 34px; }
+        .avatar{
+            display: grid;
+            width: 88px;
+            height: 88px;
+            margin: 0 auto 18px;
+            place-items: center;
+            border: 2px solid #62629b;
+            border-radius: 28px;
+            background: rgba(98,98,155,.28);
+            color: #cba6f7;
+            font-size: 2rem;
+            font-weight: 700;
+            transform: rotate(-4deg);
+        }
+        h1{ margin: 0; color: var(--name-color, #cba6f7); font-size: clamp(72px, 16vw, 130px); font-weight: 800; line-height: 1; }
+        .tagline{ margin: 14px auto 0; max-width: 440px; color: #cdd6f4; line-height: 1.6; }
+        section{ margin-top: 34px; }
+        h2{ margin: 0 0 12px 4px; color: #f38ba8; font-size: 1.5rem; font-weight: 700; letter-spacing: .04em; text-decoration: underline; text-transform: uppercase; text-underline-offset: .2em; }
+        .link-list{ display: grid; gap: 10px; }
+        .group-heading{
+            margin: 12px 4px 0;
+            color: #cba6f7;
+            font-size: .78rem;
+            font-weight: 600;
+            letter-spacing: .08em;
+        }
+        .group-heading:first-child{ margin-top: 2px; }
+        .link{
+            display: flex;
+            min-height: 68px;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            padding: 13px 17px;
+            border: 2px solid #62629b;
+            border-radius: 12px;
+            background: rgba(98,98,155,.22);
+            color: aliceblue;
+            text-decoration: none;
+            transition: transform .15s, background .15s, border-color .15s;
+        }
+        .link:hover{ transform: translateY(-2px); background: rgba(98,98,155,.4); border-color: #b4befe; }
+        .link:focus-visible, .back:focus-visible{ outline: 2px solid #cdd6f4; outline-offset: 3px; }
+        .link strong{ display: block; font-size: .98rem; font-weight: 600; }
+        .link small{ display: block; margin-top: 4px; color: #cdd6f4; font-size: .76rem; line-height: 1.45; }
+        .arrow{ flex: 0 0 auto; color: #cba6f7; font-size: 1.1rem; }
+        .back{
+            display: inline-block;
+            margin-top: 34px;
+            color: #cdd6f4;
+            font-size: .85rem;
+            text-decoration-color: #62629b;
+            text-underline-offset: 4px;
+        }
+        footer{ margin-top: 38px; color: #a6a6d6; font-size: .78rem; text-align: center; }
+        @media (prefers-reduced-motion: reduce){
+            *, *::before, *::after{ scroll-behavior: auto !important; transition-duration: .01ms !important; }
+        }
+    </style>
+</head>
+<body>
+<main>
+    <header class="profile">
+        <div class="avatar" aria-hidden="true">a98k</div>
+        <h1>a98k</h1>
+        <p class="tagline">game dev and fellow gamer. i make games in godot and videos about making them.</p>
+    </header>
+
+    <section aria-labelledby="links-heading">
+        <h2 id="links-heading">my stuff</h2>
+        <p id="links-status" class="tagline" role="status" aria-live="polite">loading links...</p>
+        <div id="link-list" class="link-list"></div>
+    </section>
+
+    <p><a class="back" href="./">← back to a98k.github.io</a></p>
+    <footer>made by hand, no frameworks</footer>
+</main>
+<script>
+(() => {
+    'use strict';
+
+    const nameColors = [
+        '#cba6f7', '#f38ba8', '#fab387', '#f9e2af',
+        '#a6e3a1', '#94e2d5', '#89dceb', '#74c7ec',
+        '#89b4fa', '#b4befe', '#f5c2e7', '#f2cdcd'
+    ];
+    const colorIndex = Math.floor(Math.random() * nameColors.length);
+    document.documentElement.style.setProperty('--name-color', nameColors[colorIndex]);
+
+    const list = document.getElementById('link-list');
+    const status = document.getElementById('links-status');
+
+    const parseLinks = (text) => text.split(/\r?\n/).flatMap((line, index) => {
+        const entry = line.trim();
+        if (!entry || entry.startsWith('#')) return [];
+
+        if (entry.startsWith('[') && entry.endsWith(']')) {
+            const heading = entry.slice(1, -1).trim();
+            if (!heading) {
+                throw new Error(`Invalid links.md line ${index + 1}: heading cannot be empty.`);
+            }
+            return [{ type: 'heading', label: heading }];
+        }
+
+        const separator = entry.indexOf('=');
+        if (separator < 1) {
+            throw new Error(`Invalid links.md line ${index + 1}: expected Label = URL.`);
+        }
+
+        const label = entry.slice(0, separator).trim();
+        const target = entry.slice(separator + 1).trim();
+        if (!label || !target) {
+            throw new Error(`Invalid links.md line ${index + 1}: both label and URL are required.`);
+        }
+
+        const url = new URL(target, document.baseURI);
+        if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+            throw new Error(`Invalid links.md line ${index + 1}: only HTTP and HTTPS links are allowed.`);
+        }
+
+        return [{ type: 'link', label, url }];
+    });
+
+    const addEntry = (entry) => {
+        if (entry.type === 'heading') {
+            const heading = document.createElement('h3');
+            heading.className = 'group-heading';
+            heading.textContent = entry.label;
+            list.append(heading);
+            return;
+        }
+
+        const { label, url } = entry;
+        const anchor = document.createElement('a');
+        anchor.className = 'link';
+        anchor.href = url.href;
+
+        const text = document.createElement('span');
+        const title = document.createElement('strong');
+        title.textContent = label;
+        text.append(title);
+
+        const arrow = document.createElement('span');
+        arrow.className = 'arrow';
+        arrow.setAttribute('aria-hidden', 'true');
+        arrow.textContent = url.origin === window.location.origin ? '→' : '↗';
+
+        anchor.append(text, arrow);
+        list.append(anchor);
+    };
+
+    const loadLinks = async () => {
+        const response = await fetch(new URL('links.md', document.baseURI), { cache: 'no-cache' });
+        if (!response.ok) {
+            throw new Error(`Could not load links.md (HTTP ${response.status}).`);
+        }
+
+        const entries = parseLinks(await response.text());
+        if (!entries.some((entry) => entry.type === 'link')) {
+            throw new Error('No links found in links.md.');
+        }
+
+        entries.forEach(addEntry);
+        status.remove();
+    };
+
+    loadLinks().catch((error) => {
+        console.error('Unable to display links:', error);
+        status.textContent = `Unable to load links: ${error.message}`;
+    });
+})();
+</script>
+</body>
+</html>
