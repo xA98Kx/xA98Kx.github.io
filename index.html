@@ -1,19 +1,34 @@
 <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>a98k</title>
+    <meta name="description" content="a98k: game dev and fellow gamer. Godot games on itch.io and gamedev videos on YouTube.">
+    <meta property="og:title" content="a98k">
+    <meta property="og:description" content="game dev and fellow gamer. godot games and gamedev videos.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎮</text></svg>">
 <style>
     .text{
-        font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
+        font-family: 'JetBrains Mono', monospace;
+        font-weight: 700;
         text-align: center;
-        align-self: top;
         font-size: 64px;
         color: aliceblue;
     }
     .idk{
-        
         text-align: center;
-        margin-top: 250px;
+        margin-top: 120px;
+        margin-bottom: 0;
     }
+    .big{ font-size: clamp(72px, 16vw, 130px); line-height: 1; font-weight: 800; }
+    .cursor{ display:inline-block; font-weight:800; animation: blink 1s steps(1, end) infinite; }
+    @keyframes blink{ 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
     .yt{
-        font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        font-family: 'JetBrains Mono', monospace;
         font-size: large;
         border: none;
         padding: 10px;
@@ -27,23 +42,108 @@
         cursor: pointer;
         opacity: 0.8;
     }
-    .but{
-        text-align: center;
-        display: flex;
-        justify-content: center;
-        gap: 12px;
-    }
     body{
-        background : linear-gradient(to bottom, #11111b, #564c81);
-        background-repeat: no-repeat;
+        margin: 0;
+        padding: 0 18px 60px;
+        font-family: 'JetBrains Mono', monospace;
+        color: aliceblue;
+        background-color: #11111b;
+        background-image:
+            radial-gradient(circle at 1px 1px, rgba(205,214,244,.075) 1px, transparent 1.2px),
+            linear-gradient(to bottom, rgba(17,17,27,.94), rgba(86,76,129,.96));
+        background-size: 24px 24px, 100% 100%;
         background-attachment: fixed;
+        background-repeat: repeat, no-repeat;
+    }
+    main{ max-width: 860px; margin: 0 auto; }
+    .tag{
+        text-align: center;
+        font-size: 1.15rem;
+        color: #cdd6f4;
+        margin: 14px auto 0;
+        max-width: 520px;
+    }
+    .links{
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 52px 12px;            /* row gap leaves room for the cat when buttons wrap */
+        margin-top: 64px;          /* room for the cat to peek out */
+    }
+    h2.text{ font-size: 40px; margin: 110px 0 24px; }
+    .cards{
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 18px;
+    }
+    .card{
+        display: flex;
+        flex-direction: column;
+        background: rgba(98,98,155,.22);
+        border: 2px solid #62629b;
+        border-radius: 14px;
+        overflow: hidden;
+        color: aliceblue;
+        text-decoration: none;
+        transition: transform .15s, background .15s;
+    }
+    .card:hover{ transform: translateY(-4px); background: rgba(98,98,155,.4); }
+    .card img{
+        width: 100%;
+        aspect-ratio: 2 / 1;
+        object-fit: cover;
+        display: block;
+        background: #2a2a45;
+    }
+    .card-actions{ display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+    .play-game, .itch-game{ display:inline-block; padding:8px 11px; border-radius:8px; font:600 .8rem 'JetBrains Mono', monospace; text-decoration:none; }
+    .play-game{ background:#a6e3a1; color:#11111b; }
+    .itch-game{ background:#cba6f7; color:#11111b; }
+    .play-game:hover, .itch-game:hover{ opacity:.82; }
+    .play-game:focus-visible, .itch-game:focus-visible{ outline:2px solid #cdd6f4; outline-offset:3px; }
+    .cb{ padding: 14px 16px 16px; }
+    .cb h3{ margin: 0 0 6px; font-size: 1.25rem; }
+    .cb p{ margin: 0 0 10px; line-height: 1.5; color: #cdd6f4; }
+    .meta{ font-size: .85rem; color: #a6a6d6; }
+    .video{
+        position: relative;
+        aspect-ratio: 16 / 9;
+        max-width: 760px;
+        margin: 0 auto 20px;
+        border: 2px solid #62629b;
+        border-radius: 14px;
+        overflow: hidden;
+        background: #11111b;
+    }
+    .video iframe{ position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+    .center{ text-align: center; }
+    footer{ text-align: center; margin-top: 80px; color: #a6a6d6; font-size: .9rem; }
+
+    /* ---- ambient binaural audio ---- */
+    #audio-toggle{
+        position: fixed;
+        right: 18px;
+        bottom: 18px;
+        z-index: 1000;
+        border: 1px solid rgba(205,214,244,.28);
+        border-radius: 10px;
+        padding: 9px 12px;
+        font: 500 .78rem 'JetBrains Mono', monospace;
+        color: #cdd6f4;
+        background: rgba(17,17,27,.72);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        cursor: pointer;
+        transition: opacity .15s, border-color .15s, background .15s;
+    }
+    #audio-toggle:hover{ background: rgba(98,98,155,.38); border-color: #62629b; }
+    #audio-toggle:focus-visible{ outline: 2px solid #cdd6f4; outline-offset: 3px; }
+    @media (max-width: 600px){
+        #audio-toggle{ right: 12px; bottom: 12px; }
     }
 
     /* ---- cat + shine on the keeb tester button (loops every 60s) ---- */
-    .kwrap{
-        position: relative;
-        display: inline-block;
-    }
+    .kwrap{ position: relative; display: inline-block; }
     .peek{
         position: absolute;
         bottom: 100%;
@@ -51,7 +151,7 @@
         margin-left: -32px;
         width: 64px;
         height: 40px;
-        overflow: hidden;          /* the button's top edge hides the cat */
+        overflow: hidden;
         pointer-events: none;
     }
     .cat{
@@ -61,14 +161,9 @@
         transform: translateY(105%);
         animation: peek 60s ease-out 3s infinite;
     }
-    .pupils{
-        animation: look 60s ease-in-out 3s infinite;
-    }
-    .shiny{
-        position: relative;
-        overflow: hidden;
-    }
-    .shiny::after{                 /* the anime sheen: one wide band + one thin band */
+    .pupils{ animation: look 60s ease-in-out 3s infinite; }
+    .shiny{ position: relative; overflow: hidden; }
+    .shiny::after{
         content: "";
         position: absolute;
         top: -10%;
@@ -84,7 +179,7 @@
             transparent 76%);
         animation: sheen 60s ease-in-out 3s infinite;
     }
-    .shiny::before{                /* little sparkle in the corner */
+    .shiny::before{
         content: "\2726";
         position: absolute;
         top: 1px;
@@ -95,7 +190,6 @@
         pointer-events: none;
         animation: twinkle 60s ease-out 3s infinite;
     }
-    /* 1% of 60s = 0.6s. Cat is out for roughly 5 seconds, once a minute. */
     @keyframes peek{
         0%   { transform: translateY(105%); }
         1.5% { transform: translateY(-4%); }
@@ -120,19 +214,20 @@
     }
     @media (prefers-reduced-motion: reduce){
         .cat, .pupils, .shiny::after, .shiny::before{ animation: none; }
+        .card{ transition: none; }
     }
 </style>
-
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Under Construction</title>
 </head>
-<body bgcolor="#11111b">
-    <p class="idk"><span class="text">Website under development</span></p>
-    <p class="but">
-        <button class="yt">Funny button?</button>
+<body>
+<button id="audio-toggle" type="button" aria-pressed="false" title="Start ambient binaural audio">ambient: off</button>
+<main>
+    <p class="idk"><span class="text big">a98k<span class="cursor" aria-hidden="true">_</span></span></p>
+    <p class="tag">game dev and fellow gamer. i make games in godot and videos about making them.</p>
+
+    <p class="links">
+        <a class="yt" href="https://www.youtube.com/@a98k">YouTube</a>
+        <a class="yt" href="https://a98k.itch.io">itch.io</a>
+        <a class="yt" href="https://twitter.com/a98k_dev">@a98k_dev</a>
         <span class="kwrap">
             <span class="peek">
                 <svg class="cat" viewBox="0 0 64 40" aria-hidden="true">
@@ -163,5 +258,231 @@
             <a class="yt shiny" href="keeb">Keeb tester</a>
         </span>
     </p>
+
+    <h2 class="text">games</h2>
+    <div class="cards">
+        <div class="card">
+            <img src="https://img.itch.zone/aW1nLzEwMzYwNTYxLnBuZw==/508x254%23mb/pY2KYj.png" alt="Disappointed NPC cover art" loading="lazy">
+            <div class="cb">
+                <h3>Disappointed NPC</h3>
+                <p>an experimental platformer prototype. arrow keys to move, enter on a door for the next level. don't press space.</p>
+                <span class="meta">godot &middot; play in browser &middot; prototype</span>
+                <span class="card-actions">
+                    <a class="play-game" href="https://xa98kx.github.io/playgame">play the game</a>
+                    <a class="itch-game" href="https://a98k.itch.io/disappointed-npc">itch.io</a>
+                </span>
+            </div>
+        </div>
+        <a class="card" href="https://higgaion-games.itch.io/rumbo">
+            <img src="https://img.itch.zone/aW1nLzEyNDI1NDUzLnBuZw==/508x254%23mb/iaz%2F61.png" alt="Rumbo cover art" loading="lazy">
+            <div class="cb">
+                <h3>Rumbo</h3>
+                <p>a survival adventure made for Adventure Jam 2023 by 14 devs who passed the project along without talking to each other. i was one of the 14.</p>
+                <span class="meta">godot &middot; play in browser &middot; open source</span>
+            </div>
+        </a>
+    </div>
+
+    <h2 class="text">videos</h2>
+    <div class="video">
+        <iframe src="https://www.youtube.com/embed/videoseries?list=UUpPCMjessfsjV8Q2v9FLjcA" title="Latest a98k videos" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+    </div>
+    <p class="center"><a class="yt" href="https://www.youtube.com/@a98k/videos">All videos on YouTube</a></p>
+
+    <footer>made by hand, no frameworks</footer>
+</main>
+
+<script>
+(() => {
+    'use strict';
+
+    // Catppuccin Mocha accent colors: intentionally excludes background/surface tones.
+    const nameColors = [
+        '#cba6f7', // Mauve
+        '#f38ba8', // Red
+        '#fab387', // Peach
+        '#f9e2af', // Yellow
+        '#a6e3a1', // Green
+        '#94e2d5', // Teal
+        '#89dceb', // Sky
+        '#74c7ec', // Sapphire
+        '#89b4fa', // Blue
+        '#b4befe', // Lavender
+        '#f5c2e7', // Pink
+        '#f2cdcd'  // Flamingo
+    ];
+
+    const root = document.documentElement;
+    const nameColor = nameColors[Math.floor(Math.random() * nameColors.length)];
+    root.style.setProperty('--name-color', nameColor);
+
+
+    const button = document.getElementById('audio-toggle');
+    let audioContext = null;
+    let masterGain = null;
+    let musicTimer = null;
+    let nextStepTime = 0;
+    let step = 0;
+    let isPlaying = false;
+
+    const BPM = 72;
+    const STEP = 60 / BPM / 2; // eighth notes
+    const LOOK_AHEAD = 0.25;
+
+    // A small four-chord progression: Cmaj7 -> Am7 -> Fmaj7 -> G6.
+    // Everything is generated with sine waves; there are no external audio files.
+    const progression = [
+        [261.63, 329.63, 392.00, 493.88], // Cmaj7
+        [220.00, 261.63, 329.63, 392.00], // Am7
+        [174.61, 220.00, 261.63, 329.63], // Fmaj7
+        [196.00, 246.94, 293.66, 392.00]  // G6
+    ];
+
+    const melody = [
+        523.25, null, 659.25, 587.33, 523.25, null, 392.00, null,
+        440.00, null, 523.25, 659.25, 587.33, null, 523.25, null,
+        392.00, null, 440.00, 523.25, 493.88, null, 440.00, null,
+        392.00, null, 493.88, 587.33, 659.25, null, 587.33, null
+    ];
+
+    const setButtonState = (playing) => {
+        isPlaying = playing;
+        button.textContent = playing ? 'music: on' : 'music: off';
+        button.setAttribute('aria-pressed', String(playing));
+        button.title = playing ? 'Mute sine-wave music' : 'Start sine-wave music';
+    };
+
+    const createAudio = () => {
+        if (audioContext) return;
+
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContext) return;
+
+        audioContext = new AudioContext();
+        masterGain = audioContext.createGain();
+        masterGain.gain.value = 0;
+        masterGain.connect(audioContext.destination);
+    };
+
+    const playNote = (frequency, start, duration, volume, pan = 0, type = 'sine') => {
+        const oscillator = audioContext.createOscillator();
+        const gain = audioContext.createGain();
+        const panner = audioContext.createStereoPanner();
+
+        oscillator.type = type;
+        oscillator.frequency.setValueAtTime(frequency, start);
+        panner.pan.setValueAtTime(pan, start);
+
+        const attack = Math.min(0.08, duration * 0.2);
+        const release = Math.min(0.3, duration * 0.35);
+        const peak = volume;
+
+        gain.gain.setValueAtTime(0, start);
+        gain.gain.linearRampToValueAtTime(peak, start + attack);
+        gain.gain.setValueAtTime(peak, Math.max(start + attack, start + duration - release));
+        gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+
+        oscillator.connect(gain);
+        gain.connect(panner);
+        panner.connect(masterGain);
+        oscillator.start(start);
+        oscillator.stop(start + duration + 0.02);
+    };
+
+    const scheduleStep = (time) => {
+        const chordIndex = Math.floor(step / 16) % progression.length;
+        const beatInChord = step % 16;
+        const chord = progression[chordIndex];
+
+        // Slow, soft chord bed.
+        if (beatInChord === 0) {
+            chord.forEach((frequency, index) => {
+                playNote(frequency, time, STEP * 15.5, 0.018, (index - 1.5) / 2);
+            });
+        }
+
+        // One simple melody note every half bar, with occasional rests.
+        const melodyIndex = step % melody.length;
+        const melodyFrequency = melody[melodyIndex];
+        if (melodyFrequency) {
+            playNote(melodyFrequency, time, STEP * 1.7, 0.045, Math.sin(step * 0.7) * 0.35);
+        }
+
+        // A very quiet root note gives the loop a little weight.
+        if (beatInChord % 4 === 0) {
+            playNote(chord[0] / 2, time, STEP * 3.7, 0.028, -0.18);
+        }
+
+        step++;
+    };
+
+    const scheduler = () => {
+        if (!audioContext || !isPlaying) return;
+        while (nextStepTime < audioContext.currentTime + LOOK_AHEAD) {
+            scheduleStep(nextStepTime);
+            nextStepTime += STEP;
+        }
+    };
+
+    const startAudio = async () => {
+        createAudio();
+        if (!audioContext || !masterGain) return;
+
+        if (audioContext.state === 'suspended') {
+            try {
+                await audioContext.resume();
+            } catch (_) {
+                return;
+            }
+        }
+
+        const now = audioContext.currentTime;
+        masterGain.gain.cancelScheduledValues(now);
+        masterGain.gain.setValueAtTime(masterGain.gain.value, now);
+        masterGain.gain.linearRampToValueAtTime(0.42, now + 1.5);
+
+        step = 0;
+        nextStepTime = now + 0.08;
+        isPlaying = true;
+        setButtonState(true);
+
+        if (!musicTimer) {
+            scheduler();
+            musicTimer = window.setInterval(scheduler, 100);
+        }
+    };
+
+    const stopAudio = () => {
+        if (!audioContext || !masterGain) return;
+
+        const now = audioContext.currentTime;
+        masterGain.gain.cancelScheduledValues(now);
+        masterGain.gain.setValueAtTime(masterGain.gain.value, now);
+        masterGain.gain.linearRampToValueAtTime(0, now + 0.8);
+        isPlaying = false;
+        setButtonState(false);
+    };
+
+    button.addEventListener('click', () => {
+        if (isPlaying) {
+            stopAudio();
+        } else {
+            startAudio();
+        }
+    });
+
+    // Browsers generally block autoplay audio. Start the music on the first
+    // user interaction anywhere on the page, then keep it running until muted.
+    const firstInteraction = (event) => {
+        if (event.target === button || button.contains(event.target)) return;
+        if (!isPlaying) startAudio();
+        window.removeEventListener('pointerdown', firstInteraction);
+        window.removeEventListener('keydown', firstInteraction);
+    };
+
+    window.addEventListener('pointerdown', firstInteraction, { passive: true });
+    window.addEventListener('keydown', firstInteraction, { passive: true });
+})();
+</script>
 </body>
 </html>
