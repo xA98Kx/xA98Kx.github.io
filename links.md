@@ -4,10 +4,9 @@
 # Replace the example URL with the address you want to use.
 
 [socials]
-YouTube = https://www.youtube.com/@a98k
+youtube = https://www.youtube.com/@a98k
 itch.io = https://a98k.itch.io
-X = https://x.com/a98k_dev
-keeb tester = keeb
+x = https://x.com/a98k_dev
 
 [games]
 disappointed npc = https://xa98kx.github.io/playgame
@@ -16,4 +15,7 @@ rumbo = https://higgaion-games.itch.io/rumbo
 
 [videos]
 all videos = https://www.youtube.com/@a98k/videos
-google = www.google.com
+
+[ai slop]
+keeb = keeb
+flooid = flooid
