@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>flooid_ | a98k</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#11111b;--panel:rgba(17,17,27,.72);--panel2:rgba(98,98,155,.22);--text:aliceblue;--muted:#a6a6d6;--accent:#cba6f7;--border:#62629b}
+  *{box-sizing:border-box;scrollbar-width:none;-ms-overflow-style:none}
+  *::-webkit-scrollbar{display:none}
+  body{margin:0;color:var(--text);font-family:'JetBrains Mono',monospace;height:100vh;overflow:hidden;background-color:#11111b;background-image:radial-gradient(circle at 1px 1px,rgba(205,214,244,.075) 1px,transparent 1.2px),linear-gradient(to bottom,rgba(17,17,27,.94),rgba(86,76,129,.96));background-size:24px 24px,100% 100%;background-attachment:fixed;background-repeat:repeat,no-repeat}
+  #app{display:grid;grid-template-columns:320px 1fr;height:100vh}
+  #sidebar{background:var(--panel);border-right:2px solid var(--border);padding:16px;overflow:auto;backdrop-filter:blur(6px)}
+  h1{font-size:18px;margin:0 0 4px}
+  .sub{font-size:12px;color:var(--muted);line-height:1.45;margin-bottom:14px}
+  fieldset{border:2px solid var(--border);border-radius:14px;padding:10px;margin:0 0 12px}
+  legend{padding:0 6px;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.12em}
+  label{display:block;font-size:12px;color:var(--muted);margin:8px 0 4px}
+  input[type=number],select{width:100%;background:#11111b;font-family:inherit;color:var(--text);border:1px solid var(--border);border-radius:7px;padding:7px 8px;outline:none}
+  input[type=range]{width:100%;accent-color:var(--accent)}
+  .row,.btnrow{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  button{background:var(--panel2);color:var(--text);border:2px solid var(--border);border-radius:8px;padding:8px 9px;cursor:pointer;font:600 12px inherit;font-family:inherit}
+  button:hover{background:rgba(98,98,155,.4)}
+  button.active{background:#a6e3a1;border-color:#a6e3a1;color:#11111b}
+  button.danger{border-color:#f38ba8;color:#f38ba8}
+  .stat{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);padding:3px 0}
+  .stat b{color:var(--text);font-weight:500}
+  #equations{font-size:11px;line-height:1.6;color:#cdd6f4}
+  #canvasWrap{position:relative;display:flex;align-items:center;justify-content:center;min-width:0;padding:12px}
+  canvas{width:100%;max-width:calc((100vh - 24px)*1.702);height:auto;background:#11111b;cursor:crosshair;border:2px solid #62629b;border-radius:14px}
+  #overlay{position:absolute;left:24px;top:24px;background:rgba(17,17,27,.82);border:1px solid var(--border);border-radius:9px;padding:7px 10px;font-size:11px;color:var(--muted);pointer-events:none}
+  #hint{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);padding:6px 10px;border-radius:8px;background:rgba(17,17,27,.8);border:1px solid var(--border);font-size:11px;color:var(--muted);pointer-events:none;white-space:nowrap}
+  .inline{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--muted);margin:7px 0}
+  .inline input{width:auto}
+  .modeText{font-size:11px;color:var(--muted);margin-top:6px;min-height:28px;line-height:1.35}
+  .small{font-size:10px;color:#8080b8;line-height:1.5}
+  .small a{color:#cba6f7}
+  #afModal{position:fixed;inset:0;background:rgba(17,17,27,.72);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;z-index:50}
+  #afModal.open{display:flex}
+  #afBox{background:rgba(17,17,27,.96);border:2px solid var(--border);border-radius:14px;padding:16px;width:min(760px,92vw);max-height:86vh;overflow:auto}
+  #afGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px;margin:12px 0}
+  .afCard{display:flex;flex-direction:column;align-items:stretch;gap:2px;text-align:left;padding:10px}
+  .afCard svg{width:100%;height:64px;margin-bottom:6px}.afCard b{font-size:13px}.afCard span{font-size:11px;color:var(--muted)}
+  input[type=color]{width:100%;height:30px;padding:0;background:none;border:2px solid var(--border);border-radius:8px;cursor:pointer}
+  .swatches{display:flex;gap:6px;margin:8px 0}.swatches input{flex:1;min-width:0}
+  h1{font-weight:800}.cur{color:#cba6f7;animation:blink 1s steps(1,end) infinite}@keyframes blink{50%,100%{opacity:0}}
+  .sub{color:#cdd6f4}
+</style>
+</head>
+<body>
+<div id="app">
+  <aside id="sidebar">
+    <h1>fluid<span class="cur">_</span></h1>
+    <div class="sub">Incompressible flow on a Cartesian grid with pressure projection. Add inlets, outlets, and solid bodies to watch the field deform.</div>
+
+    <fieldset>
+      <legend>Fluid</legend>
+      <div class="btnrow"><button id="airBtn" class="active">air</button><button id="waterBtn">water</button></div>
+      <div class="small" id="fluidNote" style="margin-top:6px"></div>
+      <div class="stat"><span>Reynolds (speed·width/ν)</span><b id="reVal">—</b></div>
+    </fieldset>
+    <fieldset>
+      <legend>Simulation</legend>
+      <div class="btnrow">
+        <button id="pauseBtn">pause</button>
+        <button id="resetBtn">reset</button>
+        <button id="clearBtn">clear objects</button>
+        <button id="stepBtn">single step</button>
+      </div>
+      <label>viscosity ν <span id="viscVal">0.00020</span></label>
+      <input id="viscosity" type="range" min="0" max="0.003" step="0.00001" value="0.0002">
+      <label>pressure iterations <span id="iterVal">40</span></label>
+      <input id="iters" type="range" min="8" max="80" step="1" value="40">
+      <label>time step Δt <span id="dtVal">0.015</span></label>
+      <input id="dt" type="range" min="0.005" max="0.05" step="0.001" value="0.015">
+      <label>grid resolution</label>
+      <select id="resSel"><option value="160">low · 160×94</option><option value="240">medium · 240×141</option><option value="320">high · 320×188</option><option value="480">ultra · 480×282</option></select>
+      <label>buoyancy (heat rises) <span id="buoyVal">4.0</span></label>
+      <input id="buoy" type="range" min="0" max="15" step="0.5" value="4">
+      <label>flow display</label>
+      <select id="display">
+        <option value="speed">velocity magnitude</option>
+        <option value="dye">dye / tracer</option>
+        <option value="temp">temperature</option>
+        <option value="vorticity">vorticity</option>
+        <option value="pressure">pressure</option>
+      </select>
+      <div class="inline"><input id="showGrid" type="checkbox"> show grid</div>
+      <div class="inline"><input id="showVectors" type="checkbox"> show velocity vectors</div>
+      <div class="inline"><input id="showParticles" type="checkbox" checked> airflow particles</div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Objects</legend>
+      <div class="btnrow">
+        <button id="selectTool" class="active">select</button>
+        <button id="inletTool">add fan</button>
+        <button id="outletTool">add outlet</button>
+        <button id="rectTool">rectangle</button>
+        <button id="circleTool">circle</button>
+        <button id="wallTool">wall (line)</button>
+        <button id="windowTool">window / door</button>
+        <button id="heaterTool">heater</button>
+        <button id="coolerTool">AC / cooler</button>
+        <button id="drawTool">draw shape</button>
+        <button id="airfoilBtn">+ airfoil</button>
+      </div>
+      <div class="modeText" id="modeText"></div>
+      <div id="objectControls" style="display:none">
+        <div class="stat"><span>selected</span><b id="objType">—</b></div>
+        <div class="inline" id="dyeRow"><input id="emitDye" type="checkbox" checked> inject tracer dye</div>
+        <button id="deleteObj" class="danger" style="width:100%;margin-top:8px">delete selected</button>
+      </div>
+      <div class="small" style="margin-top:7px">Build a room: drag <b>walls</b> (snap horizontal/vertical), add furniture with rectangle/circle, then drag a <b>window / door</b> across a wall to cut an opening. Speed 0 = open outlet (pressure 0); give it a speed + direction to blow wind in. Inlets act as fans/vents. Windows may also sit on the outer edge of the domain.</div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Colors</legend>
+      <label>flow palette</label>
+      <select id="palSel"></select>
+      <div class="swatches" id="swatches"></div>
+      <div class="btnrow"><button id="palRand">randomize</button><div class="inline" style="margin:0"><input id="palRev" type="checkbox"> reverse</div></div>
+      <div class="row"><div><label>solids</label><input id="solidCol" type="color" value="#454759"></div><div><label>particles</label><input id="partCol" type="color" value="#cdd6f4"></div></div>
+      <div class="small" style="margin-top:6px">Click a swatch to edit that colour stop (left = low value, right = high). Signed views (pressure, vorticity, temperature) use the middle as zero.</div>
+    </fieldset>
+    <fieldset>
+      <legend>Layout</legend>
+      <div class="btnrow"><button id="exportBtn">export layout</button><button id="importBtn">import layout</button><button id="dupBtn">duplicate selected</button><button id="undoBtn">undo (Ctrl+Z)</button></div>
+      <input id="importFile" type="file" accept=".json" style="display:none">
+      <label>load preset room</label>
+      <select id="preset"><option value="">choose…</option><option value="cross">cross-ventilation</option><option value="heat">heater + open windows</option><option value="ac">AC cooler + open window</option><option value="tunnel">wind tunnel + airfoil</option><option value="cyl">wind tunnel + cylinder</option><option value="empty">empty room</option></select>
+    </fieldset>
+    <fieldset>
+      <legend>Diagnostics</legend>
+      <div class="stat"><span>grid</span><b id="gridStat">—</b></div>
+      <div class="stat"><span>maximum speed</span><b id="maxSpeed">0.00</b></div>
+      <div class="stat"><span>divergence rms</span><b id="divRms">0.0000</b></div>
+      <div class="stat"><span>objects</span><b id="objCount">0</b></div>
+      <div class="stat"><span>drag on selected solid</span><b id="dragF">—</b></div>
+      <div class="stat"><span>lift on selected solid</span><b id="liftF">—</b></div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Equations</legend>
+      <div id="equations">
+        ∂u/∂t + (u·∇)u = −(1/ρ)∇p + ν∇²u<br>
+        ∇·u = 0<br>
+        ∇²p = (ρ/Δt) ∇·u*<br>
+        uⁿ⁺¹ = u* − (Δt/ρ)∇p
+      </div>
+    </fieldset>
+  <div class="small" style="text-align:center;margin:4px 0 8px"><a href="https://xa98kx.github.io">&larr; a98k</a> &middot; made by hand, no frameworks</div>
+  </aside>
+
+  <main id="canvasWrap">
+    <canvas id="canvas" width="1120" height="658"></canvas>
+    <div id="overlay">mode: <b id="modeLabel">select</b></div>
+    <div id="hint">drag to move · green ● rotate · yellow ■ resize · blue ◆ flow direction/speed · Shift snaps · Esc = select</div>
+  </main>
+</div>
+<div id="afModal"><div id="afBox">
+  <div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:16px">choose an airfoil</b><button id="afClose">✕</button></div>
+  <div id="afGrid"></div>
+  <div class="small">Placed in the middle of the canvas as a solid. Use the green handle to set the angle of attack, the yellow square to resize. Esc closes.</div>
+</div></div>
+<script>
+'use strict';
+const RES0=240;
+const canvas=document.getElementById('canvas'), ctx=canvas.getContext('2d',{alpha:false});
+const CW=canvas.width, CH=canvas.height;
+let W=160,H=94,N=W*H,h=1/(W-1);const rho=1;   // square cells of size h, domain width = 1   // square cells of size h, domain width = 1
+
+let U,V,U0,V0,Tm,Tm0,heat,P,B,D,D0,vals,solid,outlet,open,src,inlet,F,invN,redL,blackL,img,px32,OMEGA=1.8,nRed=0,nBlack=0;
+const off=document.createElement('canvas'),octx=off.getContext('2d');
+function alloc(w){   // (re)allocate every grid-sized array for a new resolution
+  W=w;H=Math.round((w-1)*CH/CW)+1;N=W*H;h=1/(W-1);OMEGA=2-24/W;
+  [U,V,U0,V0,Tm,Tm0,P,B,D,D0,vals,src,F,invN]=Array.from({length:14},()=>new Float32Array(N));
+  heat=new Int8Array(N);[solid,outlet,open]=[0,1,2].map(()=>new Uint8Array(N));inlet=new Int16Array(N);
+  redL=new Int32Array(N);blackL=new Int32Array(N);
+  off.width=W;off.height=H;img=octx.createImageData(W,H);px32=new Uint32Array(img.data.buffer);
+}
+alloc(RES0);
+
+const state={running:true,mode:'select',selected:null,drag:null,nextId:1,viscosity:0.0002,iterations:40,dt:0.015,
+  display:'speed',showGrid:false,showVectors:false,showParticles:true,buoy:4,dyeKeep:.997,hasOutlet:false,objects:[]};
+
+const $=id=>document.getElementById(id);
+const ui={}; ['pauseBtn','resetBtn','clearBtn','stepBtn','viscosity','viscVal','iters','iterVal','dt','dtVal','display','showGrid','showVectors',
+ 'objectControls','objType','objX','objY','objW','objH','speedRow','objSpeed','speedVal','objDir','emitDye','deleteObj','modeText','modeLabel',
+ 'afClose','resSel','gridStat','dyeRow','drawTool','airfoilBtn','airBtn','waterBtn','fluidNote','reVal','dragF','liftF','palSel','palRev','swatches','solidCol','partCol','palRand','showParticles','buoy','buoyVal','heaterTool','coolerTool','exportBtn','importBtn','dupBtn','undoBtn','importFile','preset','maxSpeed','divRms','objCount','angRow','objAng','wallTool','windowTool','selectTool','inletTool','outletTool','rectTool','circleTool'].forEach(n=>ui[n]=$(n));
+
+const idx=(x,y)=>x+y*W;
+const clamp=(v,a,b)=>v<a?a:v>b?b:v;
+function worldFromCanvas(e){const r=canvas.getBoundingClientRect();return{x:clamp((e.clientX-r.left)/r.width,0,1),y:clamp((e.clientY-r.top)/r.height,0,1)};}
+const gx=x=>x*(W-1), gy=y=>y*(H-1);
+function bilinear(arr,x,y){
+  x=clamp(x,0,W-1.001); y=clamp(y,0,H-1.001);
+  const x0=x|0,y0=y|0,tx=x-x0,ty=y-y0,k=x0+y0*W;
+  const a=arr[k]+(arr[k+1]-arr[k])*tx, b=arr[k+W]+(arr[k+W+1]-arr[k+W])*tx;
+  return a+(b-a)*ty;
+}
+
+function ext(o){const t=o.type,rl=RECTLIKE[t],rx=t==='poly'?o.r*CW:rl?o.w*CW/2:o.w*CW;return[rx,(t==='circle'||t==='poly')?rx:rl?o.h*CH/2:o.h*CH];}
+function handles(o){   // on-canvas gizmo handles in canvas pixels
+  const t=o.type,[rx,ry]=ext(o),rot=RECTLIKE[t]||t==='poly',a=rot?(o.ang||0)*Math.PI/180:0,c=Math.cos(a),sn=Math.sin(a),cx=o.x*CW,cy=o.y*CH,L=[];
+  const add=(kind,lx,ly,cursor)=>L.push({kind,x:cx+lx*c-ly*sn,y:cy+lx*sn+ly*c,cursor});
+  if(rot)add('rotate',0,-ry-30,'grab');
+  if(RECTLIKE[t]){add('rx',rx,0,'ew-resize');add('ry',0,ry,'ns-resize');add('rxy',rx,ry,'nwse-resize');}
+  else if(t==='circle')add('rad',rx,0,'ew-resize');
+  else if(t==='poly')add('scale',rx,0,'nwse-resize');
+  else{add('rx',rx,0,'ew-resize');add('ry',0,ry,'ns-resize');}
+  if(t==='inlet'||t==='window'){const d=(o.dir||0)*Math.PI/180,r=32+Math.abs(o.speed||0)*16;L.push({kind:'dir',x:cx+Math.cos(d)*r,y:cy+Math.sin(d)*r,cursor:'alias'});}
+  return L;
+}
+function gizmoAt(o,p){const px=p.x*CW,py=p.y*CH;return handles(o).find(g=>Math.hypot(g.x-px,g.y-py)<10)||null;}
+function startGizmo(p){const o=state.selected;if(!o)return false;const g=gizmoAt(o,p);if(!g)return false;
+  state.drag={gizmo:g.kind,obj0:o,pts0:o.pts&&o.pts.map(q=>[q[0],q[1]]),r0:o.r};return true;}
+function hoverCursor(p){let c=state.mode==='select'||state.mode==='view'?'default':'crosshair';
+  if(state.mode==='select'){const s=state.selected,g=s&&gizmoAt(s,p);c=g?g.cursor:hitTest(p)?'move':'default';}
+  canvas.style.cursor=c;}
+function dragGizmo(d,p,shift){
+  const o=d.obj0,t=o.type,k=d.gizmo,dx=p.x*CW-o.x*CW,dy=p.y*CH-o.y*CH,a=-(o.ang||0)*Math.PI/180,
+    lx=dx*Math.cos(a)-dy*Math.sin(a),ly=dx*Math.sin(a)+dy*Math.cos(a),rl=RECTLIKE[t];
+  if(k==='rotate'){let g=Math.atan2(dy,dx)*180/Math.PI+90;if(shift)g=Math.round(g/15)*15;o.ang=Math.round((((g+180)%360)+360)%360-180);}
+  else if(k==='dir'){let g=Math.atan2(dy,dx)*180/Math.PI;if(shift)g=Math.round(g/15)*15;o.dir=Math.round(g);
+    const m=Math.min(6,Math.max(0,(Math.hypot(dx,dy)-32)/16));o.speed=m<.15?0:Math.round(m*20)/20;}
+  else if(k==='rx')o.w=rl?Math.max(.02,2*Math.abs(lx)/CW):Math.max(.008,Math.abs(lx)/CW);
+  else if(k==='ry')o.h=rl?Math.max(.016,2*Math.abs(ly)/CH):Math.max(.008,Math.abs(ly)/CH);
+  else if(k==='rxy'){o.w=Math.max(.02,2*Math.abs(lx)/CW);o.h=Math.max(.016,2*Math.abs(ly)/CH);}
+  else if(k==='rad')o.w=o.h=Math.max(.008,Math.hypot(dx,dy)/CW);
+  else if(k==='scale'){const f=Math.max(.1,Math.hypot(dx,dy)/(d.r0*CW));o.pts=d.pts0.map(q=>[q[0]*f,q[1]*f]);o.r=d.r0*f;}
+  rebuildSolid();
+}
+const LINEAR={wall:1,window:1}, SOLIDT={circle:1,rect:1,wall:1,poly:1}, RECTLIKE={rect:1,wall:1,window:1};
+// Region test in normalized coords. rect/wall/window can be rotated; circles are true circles on screen.
+function isInside(o,x,y){
+  const dx=x-o.x, dy=y-o.y;
+  if(o.type==='circle'){const a=CH/CW;return dx*dx+dy*dy*a*a<=o.w*o.w;}
+  if(o.type==='poly'){   // freehand / airfoil polygon: points are relative to (x,y), in width-normalized units
+    const px=dx*CW,py=dy*CH;if(px*px+py*py>o.r*o.r*CW*CW)return false;
+    const a=-(o.ang||0)*Math.PI/180,c=Math.cos(a),sn=Math.sin(a),lx=(px*c-py*sn)/CW,ly=(px*sn+py*c)/CW,Q=o.pts;let ins=false;
+    for(let i=0,j=Q.length-1;i<Q.length;j=i++)if((Q[i][1]>ly)!==(Q[j][1]>ly)&&lx<(Q[j][0]-Q[i][0])*(ly-Q[i][1])/(Q[j][1]-Q[i][1])+Q[i][0])ins=!ins;
+    return ins;
+  }
+  if(RECTLIKE[o.type]){
+    const px=dx*CW,py=dy*CH,hw=o.w*CW/2,hh=o.h*CH/2;
+    if(px*px+py*py>(hw+hh)*(hw+hh))return false;
+    const a=-(o.ang||0)*Math.PI/180,c=Math.cos(a),s=Math.sin(a);
+    return Math.abs(px*c-py*s)<=hw&&Math.abs(px*s+py*c)<=hh;
+  }
+  return (dx/o.w)**2+(dy/o.h)**2<=1;   // inlet/outlet ellipse
+}
+
+function rebuildSolid(){
+  solid.fill(0);outlet.fill(0);open.fill(0);src.fill(0);heat.fill(0);inlet.fill(0);state.hasOutlet=false;
+  for(let x=0;x<W;x++){solid[x]=1;solid[x+(H-1)*W]=1;}
+  for(let y=0;y<H;y++){solid[y*W]=1;solid[y*W+W-1]=1;}
+  const csx=CW/(W-1),csy=CH/(H-1);
+  state.objects.forEach((o,i)=>{
+    const t=o.type,e=ext(o),R=Math.hypot(e[0],e[1])+2;
+    const x0=Math.max(0,Math.floor((o.x*CW-R)/csx)),x1=Math.min(W-1,Math.ceil((o.x*CW+R)/csx));
+    const y0=Math.max(0,Math.floor((o.y*CH-R)/csy)),y1=Math.min(H-1,Math.ceil((o.y*CH+R)/csy));
+    for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){
+      if(!isInside(o,x*h,y/(H-1)))continue;
+      const k=x+y*W;
+      if(SOLIDT[t])solid[k]=1;
+      else if(t==='inlet')inlet[k]=i+1;
+      else if(t==='heater'||t==='cooler')heat[k]=t==='heater'?1:-1;
+      else{open[k]=1;if(t==='window'&&o.speed)inlet[k]=i+1;else outlet[k]=1;}
+    }
+  });
+  for(let k=0;k<N;k++){
+    if(open[k])solid[k]=0;
+    if(solid[k]){inlet[k]=0;outlet[k]=0;}
+    else if(inlet[k])outlet[k]=0;
+    else if(outlet[k]){state.hasOutlet=true;P[k]=0;}
+    F[k]=solid[k]?0:1;
+  }
+  // windows with wind are volume SOURCES: divergence = speed / (cell extent along the flow)
+  const lo={},hi={};
+  for(let k=0;k<N;k++){const i=inlet[k]-1;if(i<0||state.objects[i].type!=='window')continue;
+    const a=state.objects[i].dir*Math.PI/180,pr=(k%W)*Math.cos(a)+((k/W)|0)*Math.sin(a);
+    if(!(i in lo)||pr<lo[i])lo[i]=pr;if(!(i in hi)||pr>hi[i])hi[i]=pr;}
+  for(let k=0;k<N;k++){const i=inlet[k]-1;if(i>=0&&(i in lo))src[k]=state.objects[i].speed/((hi[i]-lo[i]+1)*h);}
+  // red/black cell lists for the pressure solver (outlets are fixed p=0, so they are not unknowns)
+  nRed=nBlack=0;
+  for(let y=1;y<H-1;y++)for(let x=1;x<W-1;x++){const k=x+y*W;if(solid[k]||outlet[k])continue;
+    const n=F[k-1]+F[k+1]+F[k-W]+F[k+W];if(!n)continue;invN[k]=1/n;
+    if(((x+y)&1)===0)redL[nRed++]=k;else blackL[nBlack++]=k;}
+}
+
+function applyBC(){
+  for(let k=0;k<N;k++){
+    if(heat[k])Tm[k]=heat[k];
+    if(solid[k]){U[k]=0;V[k]=0;D[k]=0;Tm[k]=0;}
+    else if(inlet[k]){
+      const o=state.objects[inlet[k]-1],a=o.dir*Math.PI/180;
+      U[k]=o.speed*Math.cos(a);V[k]=o.speed*Math.sin(a);
+      if(o.emitDye)D[k]=1;
+    }
+  }
+}
+
+function edgeCopy(){ // open cells on the domain edge: zero-gradient outflow
+  for(let x=1;x<W-1;x++){const t=x,b=x+(H-1)*W;
+    if(outlet[t]){U[t]=U[t+W];V[t]=V[t+W];}
+    if(outlet[b]){U[b]=U[b-W];V[b]=V[b-W];}}
+  for(let y=1;y<H-1;y++){const l=y*W,r=l+W-1;
+    if(outlet[l]){U[l]=U[l+1];V[l]=V[l+1];}
+    if(outlet[r]){U[r]=U[r-1];V[r]=V[r-1];}}
+}
+function advect2(sA,dA,sB,dB,dt,kA,kB){   // semi-Lagrangian, one backtrace shared by two fields
+  const s=dt/h,mx=W-1.001,my=H-1.001;
+  for(let y=1;y<H-1;y++)for(let x=1;x<W-1;x++){
+    const k=x+y*W;if(solid[k]){dA[k]=0;dB[k]=0;continue;}
+    let px=x-U[k]*s,py=y-V[k]*s;px=px<0?0:px>mx?mx:px;py=py<0?0:py>my?my:py;
+    const x0=px|0,y0=py|0,tx=px-x0,ty=py-y0,i=x0+y0*W,a=(1-tx)*(1-ty),b=tx*(1-ty),c=(1-tx)*ty,d=tx*ty;
+    dA[k]=(sA[i]*a+sA[i+1]*b+sA[i+W]*c+sA[i+W+1]*d)*kA;
+    dB[k]=(sB[i]*a+sB[i+1]*b+sB[i+W]*c+sB[i+W+1]*d)*kB;
+  }
+}
+function diffuse(f,prev,nu,dt){
+  f.set(prev);const a=nu*dt/(h*h);if(a<.05)return;   // negligible viscosity: skip the solve entirely
+  const d=1+4*a,its=a<.3?3:8;
+  for(let it=0;it<its;it++)for(let y=1;y<H-1;y++)for(let x=1;x<W-1;x++){
+    const k=x+y*W;if(solid[k]){f[k]=0;continue;}
+    f[k]=(prev[k]+a*(f[k-1]+f[k+1]+f[k-W]+f[k+W]))/d;
+  }
+}
+function project(dt){
+  const hh=h*h*rho/dt;
+  for(let y=1;y<H-1;y++)for(let x=1;x<W-1;x++){const k=x+y*W;
+    B[k]=solid[k]?0:(((U[k+1]-U[k-1])+(V[k+W]-V[k-W]))/(2*h)-src[k])*hh;}
+  const sweep=(L,n)=>{for(let i=0;i<n;i++){const k=L[i],pk=P[k];   // SOR on precomputed red/black lists, Neumann at solids
+    P[k]=pk+OMEGA*(((P[k-1]*F[k-1]+P[k+1]*F[k+1]+P[k-W]*F[k-W]+P[k+W]*F[k+W])-B[k])*invN[k]-pk);}};
+  for(let it=0;it<state.iterations;it++){sweep(redL,nRed);sweep(blackL,nBlack);}
+  if(!state.hasOutlet){let s=0,n=0;for(let k=0;k<N;k++)if(!solid[k]){s+=P[k];n++;}s/=Math.max(1,n);for(let k=0;k<N;k++)if(!solid[k])P[k]-=s;}
+  for(let y=1;y<H-1;y++)for(let x=1;x<W-1;x++){const k=x+y*W;if(solid[k]||inlet[k])continue;
+    const pk=P[k],l=solid[k-1]?pk:P[k-1],r=solid[k+1]?pk:P[k+1],d=solid[k-W]?pk:P[k-W],u=solid[k+W]?pk:P[k+W];
+    U[k]-=(dt/rho)*(r-l)/(2*h);V[k]-=(dt/rho)*(u-d)/(2*h);}
+}
+function buoyancy(dt){for(let k=0;k<N;k++)if(!solid[k])V[k]-=state.buoy*Tm[k]*dt;}   // hot air rises (screen up = -y)
+const NP=2500,PX=new Float32Array(NP),PY=new Float32Array(NP),PA=new Float32Array(NP);
+function spawn(i){for(let t=0;t<20;t++){const x=1+Math.random()*(W-3),y=1+Math.random()*(H-3);
+  if(!solid[idx(x|0,y|0)]){PX[i]=x;PY[i]=y;PA[i]=40+Math.random()*220;return;}}PX[i]=-1;PA[i]=0;}
+for(let i=0;i<NP;i++)spawn(i);
+function moveParticles(dt){
+  const s=dt/h;
+  for(let i=0;i<NP;i++){
+    if(PX[i]<0||PA[i]--<=0){spawn(i);continue;}
+    const x=PX[i],y=PY[i];
+    PX[i]=x+bilinear(U,x,y)*s;PY[i]=y+bilinear(V,x,y)*s;
+    if(PX[i]<1||PX[i]>=W-1||PY[i]<1||PY[i]>=H-1||solid[idx(PX[i]|0,PY[i]|0)]||outlet[idx(PX[i]|0,PY[i]|0)])spawn(i);
+  }
+}
+function step(){
+  const dt=state.dt;   // geometry is rebuilt only when objects change, not every step
+  U0.set(U);V0.set(V);
+  advect2(U,U0,V,V0,dt,1,1);
+  diffuse(U,U0,state.viscosity,dt);diffuse(V,V0,state.viscosity,dt);
+  buoyancy(dt);applyBC();edgeCopy();
+  project(dt);
+  applyBC();edgeCopy();
+  advect2(D,D0,Tm,Tm0,dt,state.dyeKeep,.999);D.set(D0);Tm.set(Tm0);
+  applyBC();
+  if(state.showParticles)moveParticles(dt);
+}
+
+const PALS={
+  'a98k (default)':['#11111b','#313244','#62629b','#cba6f7','#f5c2e7','#cdd6f4'],
+  ember:['#0e0c0a','#282d32','#4a6e8a','#a39a78','#e2be6b','#ffefce'],
+  ice:['#0b132b','#1c2541','#3a506b','#5bc0be','#a8e6ef','#ffffff'],
+  magma:['#000004','#3b0f70','#8c2981','#de4968','#fe9f6d','#fcfdbf'],
+  viridis:['#440154','#3b528b','#21918c','#5ec962','#fde725'],
+  'blue-red (diverging)':['#2166ac','#92c5de','#f7f7f7','#f4a582','#b2182b'],
+  mono:['#000000','#ffffff']
+};
+state.stops=[...PALS['a98k (default)']];state.reversePal=false;state.partCol='#cdd6f4';
+const hex2rgb=h=>[1,3,5].map(i=>parseInt(h.slice(i,i+2),16));
+const LUT=new Uint32Array(256);
+function buildLUT(){   // evenly spaced colour stops -> 256-entry lookup
+  const st=state.stops.map(hex2rgb);if(state.reversePal)st.reverse();
+  for(let i=0;i<256;i++){const t=i/255*(st.length-1),a=Math.min(st.length-2,t|0),q=t-a,c=st[a].map((v,j)=>v+(st[a+1][j]-v)*q);
+    LUT[i]=(255<<24)|(c[2]<<16)|(c[1]<<8)|c[0];}
+}
+let SOLID_COL=(255<<24)|(90<<16)|(71<<8)|69;
+function setSolid(hex){const c=hex2rgb(hex);SOLID_COL=(255<<24)|(c[2]<<16)|(c[1]<<8)|c[0];}
+function hsl2hex(h,s,l){s/=100;l/=100;const k=n=>(n+h/30)%12,a=s*Math.min(l,1-l),f=n=>l-a*Math.max(-1,Math.min(k(n)-3,Math.min(9-k(n),1)));
+  return '#'+[f(0),f(8),f(4)].map(x=>Math.round(x*255).toString(16).padStart(2,'0')).join('');}
+buildLUT();
+
+function render(){
+  const disp=state.display, signed=disp==='vorticity'||disp==='pressure'||disp==='temp';
+  let max=0,amax=0,dsum=0,cnt=0;
+  for(let y=1;y<H-1;y++)for(let x=1;x<W-1;x++){
+    const k=idx(x,y); if(solid[k]){vals[k]=0;continue;}
+    const s=Math.hypot(U[k],V[k]); if(s>max)max=s;
+    const dv=((U[k+1]-U[k-1])+(V[k+W]-V[k-W]))/(2*h); dsum+=dv*dv;cnt++;
+    const v=disp==='speed'?s:disp==='dye'?D[k]:disp==='temp'?Tm[k]:disp==='pressure'?P[k]:((V[k+1]-V[k-1])-(U[k+W]-U[k-W]))/(2*h);
+    vals[k]=v; if(Math.abs(v)>amax)amax=Math.abs(v);
+  }
+  const range=disp==='speed'?Math.max(0.25,max):disp==='dye'?1:disp==='temp'?1:disp==='pressure'?Math.max(0.1,amax):Math.max(1,amax);
+  for(let k=0;k<N;k++){
+    if(solid[k]){px32[k]=SOLID_COL;continue;}
+    const t=signed?0.5+0.5*clamp(vals[k]/range,-1,1):clamp(vals[k]/range,0,1);
+    px32[k]=LUT[(t*255)|0];
+  }
+  octx.putImageData(img,0,0);
+  const cx=CW/(W-1), cy=CH/(H-1);   // draw so cell centres line up with object coordinates
+  ctx.imageSmoothingEnabled=true;
+  ctx.drawImage(off,-cx/2,-cy/2,W*cx,H*cy);
+
+  if(state.showGrid){
+    ctx.save();ctx.strokeStyle='rgba(255,255,255,.07)';ctx.beginPath();
+    for(let x=0;x<=W;x+=10){const xx=x*cx;ctx.moveTo(xx,0);ctx.lineTo(xx,CH);}
+    for(let y=0;y<=H;y+=10){const yy=y*cy;ctx.moveTo(0,yy);ctx.lineTo(CW,yy);}
+    ctx.stroke();ctx.restore();
+  }
+  if(state.showVectors){
+    ctx.save();ctx.strokeStyle=ctx.fillStyle='rgba(205,214,244,.55)';
+    for(let y=4;y<H-4;y+=8)for(let x=4;x<W-4;x+=8){
+      const k=idx(x,y),ux=U[k],vy=V[k]; if(solid[k]||Math.hypot(ux,vy)<0.02)continue;
+      const px=x*cx,py=y*cy,ex=px+ux*16,ey=py+vy*16,a=Math.atan2(ey-py,ex-px);
+      ctx.beginPath();ctx.moveTo(px,py);ctx.lineTo(ex,ey);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(ex,ey);ctx.lineTo(ex-4*Math.cos(a-.5),ey-4*Math.sin(a-.5));ctx.lineTo(ex-4*Math.cos(a+.5),ey-4*Math.sin(a+.5));ctx.fill();
+    }
+    ctx.restore();
+  }
+  if(state.showParticles){
+    ctx.save();ctx.strokeStyle=state.partCol+'88';ctx.lineWidth=1.2;ctx.beginPath();
+    for(let i=0;i<NP;i++){if(PX[i]<0)continue;const x=PX[i],y=PY[i],u=bilinear(U,x,y),v=bilinear(V,x,y);
+      ctx.moveTo(x*cx,y*cy);ctx.lineTo((x-u*.05/h)*cx,(y-v*.05/h)*cy);}
+    ctx.stroke();ctx.restore();
+  }
+  drawObjects();
+  ui.maxSpeed.textContent=max.toFixed(3);
+  ui.divRms.textContent=Math.sqrt(dsum/Math.max(1,cnt)).toFixed(4);
+  ui.objCount.textContent=state.objects.length;
+  ui.reVal.textContent=Math.round(max/Math.max(1e-6,state.viscosity)).toLocaleString();
+  const sel=state.selected;
+  if(sel&&SOLIDT[sel.type]){const f=bodyForce(sel);state.fx=(state.fx||0)+(f[0]-(state.fx||0))*.1;state.fy=(state.fy||0)+(f[1]-(state.fy||0))*.1;
+    ui.dragF.textContent=state.fx.toFixed(3);ui.liftF.textContent=(-state.fy).toFixed(3);}
+  else ui.dragF.textContent=ui.liftF.textContent='—';
+}
+
+function drawObjects(){
+  ctx.save();
+  for(const o of state.objects){
+    const sel=o===state.selected,t=o.type,x=o.x*CW,y=o.y*CH,rl=RECTLIKE[t];
+    const rx=t==='poly'?o.r*CW:rl?o.w*CW/2:o.w*CW, ry=(t==='circle'||t==='poly')?rx:rl?o.h*CH/2:o.h*CH;
+    const col=t==='heater'?'#fab387':t==='cooler'?'#89dceb':t==='inlet'?'#89b4fa':t==='outlet'?'#f38ba8':t==='window'?(o.speed?'#89b4fa':'#f38ba8'):null;
+    ctx.save();ctx.translate(x,y);if(rl||t==='poly')ctx.rotate((o.ang||0)*Math.PI/180);
+    ctx.lineWidth=sel?2.5:1.5;ctx.beginPath();
+    if(t==='poly'){o.pts.forEach((q,i)=>i?ctx.lineTo(q[0]*CW,q[1]*CW):ctx.moveTo(q[0]*CW,q[1]*CW));ctx.closePath();}
+    else if(rl)ctx.rect(-rx,-ry,2*rx,2*ry);else ctx.ellipse(0,0,rx,ry,0,0,Math.PI*2);
+    if(col){ctx.fillStyle=col+'22';ctx.fill();ctx.strokeStyle=col;}else ctx.strokeStyle=sel?'#f9e2af':'#6c7086';
+    ctx.stroke();   // solids are shown by the solver's own cells; only outlined here
+    if(sel){ctx.strokeStyle='#cdd6f4';ctx.lineWidth=1;ctx.setLineDash([4,4]);ctx.strokeRect(-rx-4,-ry-4,2*rx+8,2*ry+8);}
+    ctx.restore();
+    if(t==='inlet'||(t==='window'&&o.speed)){const a=o.dir*Math.PI/180,sg=Math.sign(o.speed||1);ctx.strokeStyle=col;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+Math.cos(a)*28*sg,y+Math.sin(a)*28*sg);ctx.stroke();}
+    const lab=t==='heater'?'heater':t==='cooler'?'AC cooler':t==='inlet'?`fan ${o.speed.toFixed(1)}`:t==='outlet'?'outlet':t==='window'?(o.speed?`window wind ${o.speed.toFixed(1)}`:'window (open)'):null;
+    if(lab){ctx.font="11px 'JetBrains Mono',monospace";ctx.fillStyle=col;ctx.fillText(lab,x+8,y-8);}
+  }
+  const so=state.selected;
+  if(so&&state.mode==='select'){
+    ctx.save();ctx.lineWidth=1.5;
+    for(const g of handles(so)){
+      const col=g.kind==='rotate'?'#a6e3a1':g.kind==='dir'?'#89b4fa':'#f9e2af';
+      if(g.kind==='rotate'||g.kind==='dir'){ctx.strokeStyle=col+'aa';ctx.beginPath();ctx.moveTo(so.x*CW,so.y*CH);ctx.lineTo(g.x,g.y);ctx.stroke();}
+      ctx.fillStyle=col;ctx.strokeStyle='#11111b';ctx.beginPath();
+      if(g.kind==='rotate')ctx.arc(g.x,g.y,6,0,7);
+      else if(g.kind==='dir'){ctx.moveTo(g.x+8,g.y);ctx.lineTo(g.x,g.y+6);ctx.lineTo(g.x-8,g.y);ctx.lineTo(g.x,g.y-6);ctx.closePath();}
+      else ctx.rect(g.x-4,g.y-4,8,8);
+      ctx.fill();ctx.stroke();
+    }
+    ctx.restore();
+  }
+  const d=state.drag;
+  if(d&&d.shape){
+    const dx=(d.currentX-d.startX)*CW,dy=(d.currentY-d.startY)*CH;
+    ctx.strokeStyle='#f9e2af';ctx.lineWidth=1.5;ctx.setLineDash([5,4]);ctx.beginPath();
+    if(d.shape==='draw'){d.path.forEach((q,i)=>i?ctx.lineTo(q[0]*CW,q[1]*CH):ctx.moveTo(q[0]*CW,q[1]*CH));ctx.closePath();}
+    else if(d.shape==='circle')ctx.arc(d.startX*CW+dx/2,d.startY*CH+dy/2,Math.hypot(dx,dy)/2,0,Math.PI*2);
+    else if(LINEAR[d.shape]){ctx.moveTo(d.startX*CW,d.startY*CH);ctx.lineTo(d.currentX*CW,d.currentY*CH);}
+    else ctx.rect(d.startX*CW,d.startY*CH,dx,dy);
+    ctx.stroke();ctx.setLineDash([]);
+  }
+  ctx.restore();
+}
+
+function hitTest(p){for(let i=state.objects.length-1;i>=0;i--)if(isInside(state.objects[i],p.x,p.y))return state.objects[i];return null;}
+
+function makeObject(type,p){
+  const id=state.nextId++;
+  if(type==='inlet')return{id,type,x:p.x,y:p.y,w:.035,h:.035,speed:2,dir:0,emitDye:true};
+  if(type==='heater'||type==='cooler')return{id,type,x:p.x,y:p.y,w:.03,h:.051};
+  return{id,type:'outlet',x:p.x,y:p.y,w:.04,h:.04,speed:0,dir:0,emitDye:false};
+}
+
+const MODE_TEXT={view:'Selection off: clicks do nothing. Press Select to edit objects again.',select:'Click an object, then drag it to move. Green circle rotates, squares resize, blue diamond sets flow direction and speed (Shift snaps).',inlet:'Click to place a circulation fan (pushes air, adds none).',outlet:'Click the fluid to place a pressure-release outlet.',rect:'Click-drag on the fluid to draw a rectangle.',circle:'Click-drag on the fluid to draw a circle.',wall:'Drag to draw a wall (snaps to horizontal/vertical).',draw:'Hold and drag to sketch any closed shape; release to finish. Rotate it with the rotation field.',window:'Drag along a wall to cut a window or door (speed 0 = open outlet).',heater:'Click to place a heater (warm air rises).',cooler:'Click to place an AC / cooler (cold air sinks).'};
+function snapPt(d,p){let dx=(p.x-d.startX)*CW,dy=(p.y-d.startY)*CH;
+  if(Math.abs(dy)<Math.abs(dx)*.1)dy=0;else if(Math.abs(dx)<Math.abs(dy)*.1)dx=0;
+  return[d.startX+dx/CW,d.startY+dy/CH];}
+function lineObj(type,id,d,p){
+  const q=snapPt(d,p),dx=(q[0]-d.startX)*CW,dy=(q[1]-d.startY)*CH;
+  return{id,type,x:(d.startX+q[0])/2,y:(d.startY+q[1])/2,w:Math.max(.02,Math.hypot(dx,dy)/CW),h:type==='wall'?.02:.034,ang:Math.atan2(dy,dx)*180/Math.PI,speed:0,dir:0,emitDye:false};
+}
+function setMode(m){
+  state.mode=m;ui.modeLabel.textContent=m;ui.modeText.textContent=MODE_TEXT[m];
+  ['select','inlet','outlet','rect','circle','wall','window','heater','cooler','draw'].forEach(n=>ui[n+'Tool'].classList.toggle('active',n===m));
+}
+
+function syncControls(){
+  const o=state.selected;ui.objectControls.style.display=o?'block':'none';if(!o)return;
+  ui.objType.textContent=o.type;ui.dyeRow.style.display=(o.type==='inlet'||o.type==='window')?'flex':'none';ui.emitDye.checked=!!o.emitDye;
+}
+const togglePause=()=>{state.running=!state.running;ui.pauseBtn.textContent=state.running?'pause':'resume';};
+
+ui.pauseBtn.onclick=togglePause;
+ui.resetBtn.onclick=()=>{[U,V,U0,V0,P,D,D0,Tm,Tm0].forEach(a=>a.fill(0));};
+ui.clearBtn.onclick=()=>{state.objects=[];state.selected=null;syncControls();rebuildSolid();};
+ui.stepBtn.onclick=()=>step();
+ui.viscosity.oninput=()=>{state.viscosity=Number(ui.viscosity.value);ui.viscVal.textContent=state.viscosity.toFixed(5);};
+ui.iters.oninput=()=>{state.iterations=Number(ui.iters.value);ui.iterVal.textContent=state.iterations;};
+ui.dt.oninput=()=>{state.dt=Number(ui.dt.value);ui.dtVal.textContent=state.dt.toFixed(3);};
+ui.display.onchange=()=>state.display=ui.display.value;
+ui.showGrid.onchange=()=>state.showGrid=ui.showGrid.checked;
+ui.showVectors.onchange=()=>state.showVectors=ui.showVectors.checked;
+ui.showParticles.onchange=()=>state.showParticles=ui.showParticles.checked;
+ui.buoy.oninput=()=>{state.buoy=Number(ui.buoy.value);ui.buoyVal.textContent=state.buoy.toFixed(1);};
+ui.emitDye.onchange=()=>{if(state.selected){pushUndo();state.selected.emitDye=ui.emitDye.checked;}};
+ui.deleteObj.onclick=()=>{const i=state.objects.indexOf(state.selected);if(i>=0)state.objects.splice(i,1);state.selected=null;syncControls();rebuildSolid();};
+ui.selectTool.onclick=()=>{state.selected=null;syncControls();setMode(state.mode==='select'?'view':'select');};ui.inletTool.onclick=()=>setMode('inlet');ui.outletTool.onclick=()=>setMode('outlet');
+ui.rectTool.onclick=()=>setMode('rect');ui.circleTool.onclick=()=>setMode('circle');ui.wallTool.onclick=()=>setMode('wall');ui.windowTool.onclick=()=>setMode('window');ui.heaterTool.onclick=()=>setMode('heater');ui.drawTool.onclick=()=>setMode('draw');ui.coolerTool.onclick=()=>setMode('cooler');
+
+canvas.addEventListener('mousedown',e=>{
+  if(state.mode==='view')return;pushUndo();const p=worldFromCanvas(e);if(state.mode==='select'&&startGizmo(p))return;
+  if(state.mode==='select'){
+    const hit=hitTest(p);state.selected=hit;syncControls();
+    if(hit)state.drag={obj:hit,dx:p.x-hit.x,dy:p.y-hit.y};
+    return;
+  }
+  if(['inlet','outlet','heater','cooler'].includes(state.mode)){
+    const o=makeObject(state.mode,p);state.objects.push(o);state.selected=o;setMode('select');syncControls();rebuildSolid();return;
+  }
+  state.drag={startX:p.x,startY:p.y,currentX:p.x,currentY:p.y,shape:state.mode,path:[[p.x,p.y]]};
+});
+window.addEventListener('mousemove',e=>{
+  const p=worldFromCanvas(e),d=state.drag;if(!d){hoverCursor(p);return;}
+  if(d.gizmo){dragGizmo(d,p,e.shiftKey);return;}
+  if(d.obj){d.obj.x=clamp(p.x-d.dx,.01,.99);d.obj.y=clamp(p.y-d.dy,.01,.99);syncControls();rebuildSolid();}
+  else{if(d.path){const l=d.path[d.path.length-1];if(Math.hypot((p.x-l[0])*CW,(p.y-l[1])*CH)>5)d.path.push([p.x,p.y]);}
+    [d.currentX,d.currentY]=LINEAR[d.shape]?snapPt(d,p):[p.x,p.y];}
+});
+window.addEventListener('mouseup',e=>{   // on window so releasing outside the canvas doesn't leave a stuck drag
+  const d=state.drag;if(!d)return;state.drag=null;
+  if(d.obj||d.gizmo)return;
+  if(d.shape==='draw'){finishPoly(d);return;}
+  const p=worldFromCanvas(e),dx=p.x-d.startX,dy=p.y-d.startY,id=state.nextId++,mx=(d.startX+p.x)/2,my=(d.startY+p.y)/2;
+  const o=d.shape==='circle'
+    ?(()=>{const r=Math.max(.01,Math.hypot(dx*CW,dy*CH)/2/CW);return{id,type:'circle',x:mx,y:my,w:r,h:r};})()
+    :LINEAR[d.shape]?lineObj(d.shape,id,d,p):{id,type:'rect',x:mx,y:my,w:Math.max(.01,Math.abs(dx)),h:Math.max(.01,Math.abs(dy))};
+  state.objects.push(o);state.selected=o;syncControls();setMode('select');rebuildSolid();
+});
+window.addEventListener('keydown',e=>{
+  if(/INPUT|SELECT|TEXTAREA/.test(e.target.tagName))return;
+  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){e.preventDefault();undo();return;}
+  if(e.key==='Escape'){closeAf();setMode('select');state.selected=null;syncControls();}   // don't hijack typing in fields
+  if(e.key===' '){e.preventDefault();togglePause();}
+  if(e.key==='Delete'||e.key==='Backspace')ui.deleteObj.click();
+});
+
+const WL=(x,y,w,ang)=>({type:'wall',x,y,w,h:.02,ang});
+const room=()=>[WL(.5,.2,.62,0),WL(.5,.8,.62,0),WL(.2,.5,.363,90),WL(.8,.5,.363,90)];
+const win=(x,y,speed=0,dir=0,ang=90)=>({type:'window',x,y,w:.07,h:.034,ang,speed,dir,emitDye:speed!==0});
+const furn=()=>[{type:'rect',x:.36,y:.7,w:.2,h:.12,ang:0},{type:'circle',x:.55,y:.46,w:.035,h:.035},{type:'rect',x:.72,y:.28,w:.1,h:.05,ang:0}];
+function polyObj(pts,x,y,ang=0){return{type:'poly',x,y,w:1,h:1,ang,pts,r:Math.max(...pts.map(q=>Math.hypot(q[0],q[1])))};}
+function addPoly(pts,x,y){const o={id:state.nextId++,...polyObj(pts,x,y)};state.objects.push(o);state.selected=o;syncControls();rebuildSolid();setMode('select');}
+function finishPoly(d){
+  const P=d.path.map(q=>[q[0]*CW,q[1]*CH]);if(P.length<3)return;
+  const x0=Math.min(...P.map(q=>q[0])),x1=Math.max(...P.map(q=>q[0])),y0=Math.min(...P.map(q=>q[1])),y1=Math.max(...P.map(q=>q[1])),cx=(x0+x1)/2,cy=(y0+y1)/2;
+  addPoly(P.map(q=>[(q[0]-cx)/CW,(q[1]-cy)/CW]),cx/CW,cy/CH);
+}
+function airfoil(m,pp,t,c=.22,n=30){   // NACA-style section: max camber m at position pp, thickness t, chord c; leading edge on the left
+  const Up=[],Lo=[];
+  for(let i=0;i<=n;i++){const x=(1-Math.cos(Math.PI*i/n))/2,yt=5*t*(.2969*Math.sqrt(x)-.126*x-.3516*x*x+.2843*x**3-.1036*x**4);
+    let yc=0,th=0;
+    if(m>0&&pp>0){yc=x<pp?m/(pp*pp)*(2*pp*x-x*x):m/((1-pp)**2)*((1-2*pp)+2*pp*x-x*x);th=Math.atan(x<pp?2*m/(pp*pp)*(pp-x):2*m/((1-pp)**2)*(pp-x));}
+    Up.push([x-yt*Math.sin(th),yc+yt*Math.cos(th)]);Lo.push([x+yt*Math.sin(th),yc-yt*Math.cos(th)]);}
+  return Up.concat(Lo.reverse().slice(1)).map(q=>[(q[0]-.5)*c,-q[1]*c]);
+}
+const naca=(code,c)=>airfoil(+code[0]/100,+code[1]/10,+code.slice(2)/100,c);
+function ellipsePts(t,c,n=40){const P=[];for(let i=0;i<n;i++){const a=2*Math.PI*i/n;P.push([Math.cos(a)*c/2,Math.sin(a)*t*c/2]);}return P;}
+const AIRFOILS=[
+  {n:'NACA 0006',d:'thin symmetric',g:c=>airfoil(0,0,.06,c)},
+  {n:'NACA 0009',d:'symmetric, slim',g:c=>airfoil(0,0,.09,c)},
+  {n:'NACA 0012',d:'symmetric, the classic',g:c=>airfoil(0,0,.12,c)},
+  {n:'NACA 0015',d:'symmetric, thick',g:c=>airfoil(0,0,.15,c)},
+  {n:'NACA 2412',d:'light-aircraft wing',g:c=>airfoil(.02,.4,.12,c)},
+  {n:'NACA 4412',d:'cambered, high lift',g:c=>airfoil(.04,.4,.12,c)},
+  {n:'NACA 6409',d:'very high camber',g:c=>airfoil(.06,.4,.09,c)},
+  {n:'Cambered plate',d:'6% arc, thin sail-like',g:c=>airfoil(.06,.5,.02,c)},
+  {n:'Flat plate',d:'2% thick, stalls early',g:c=>airfoil(0,0,.02,c)},
+  {n:'Ellipse 12%',d:'streamlined body',g:c=>ellipsePts(.12,c)}
+];
+function closeAf(){$('afModal').classList.remove('open');}
+function openAf(){
+  const g=$('afGrid');
+  if(!g.children.length)AIRFOILS.forEach(a=>{
+    const pts=a.g(1),path=pts.map((q,i)=>(i?'L':'M')+(q[0]*100).toFixed(1)+' '+(q[1]*100).toFixed(1)).join('')+'Z';
+    const b=document.createElement('button');b.className='afCard';
+    b.innerHTML=`<svg viewBox="-56 -20 112 40"><path d="${path}" fill="#62629b66" stroke="#cba6f7" stroke-width="1.3" stroke-linejoin="round"/></svg><b>${a.n}</b><span>${a.d}</span>`;
+    b.onclick=()=>{pushUndo();addPoly(a.g(.22),.5,.5);closeAf();};g.appendChild(b);});
+  $('afModal').classList.add('open');
+}
+function bodyForce(o){   // pressure force on the body's wetted faces (viscous shear not included)
+  let fx=0,fy=0;
+  for(let y=1;y<H-1;y++)for(let x=1;x<W-1;x++){const k=x+y*W;if(!solid[k])continue;
+    const r=!solid[k+1],l=!solid[k-1],d=!solid[k+W],u=!solid[k-W];
+    if(!(r||l||d||u)||!isInside(o,x*h,y/(H-1)))continue;
+    if(r)fx-=P[k+1];if(l)fx+=P[k-1];if(d)fy-=P[k+W];if(u)fy+=P[k-W];}
+  return[fx*h,fy*h];
+}
+const FLUIDS={
+  air:{nu:.00015,buoy:4,dye:.997,pal:'a98k (default)',note:'Air: kinematic viscosity ~15x water, strong thermal buoyancy, dye fades fast.'},
+  water:{nu:.00001,buoy:.25,dye:.9995,pal:'ice',note:'Water: low viscosity (higher Reynolds number), weak thermal buoyancy, dye lingers.'}
+};
+function setFluid(n){const f=FLUIDS[n];
+  state.viscosity=f.nu;ui.viscosity.value=f.nu;ui.viscVal.textContent=f.nu.toFixed(5);
+  state.buoy=f.buoy;ui.buoy.value=f.buoy;ui.buoyVal.textContent=f.buoy.toFixed(1);state.dyeKeep=f.dye;
+  state.stops=[...PALS[f.pal]];ui.palSel.value=f.pal;renderSwatches();buildLUT();
+  ui.airBtn.classList.toggle('active',n==='air');ui.waterBtn.classList.toggle('active',n==='water');ui.fluidNote.textContent=f.note;}
+ui.airBtn.onclick=()=>setFluid('air');ui.waterBtn.onclick=()=>setFluid('water');
+ui.airfoilBtn.onclick=openAf;ui.afClose.onclick=closeAf;$("afModal").onclick=e=>{if(e.target.id==="afModal")closeAf();};
+const tunnelWins=()=>[{type:'window',x:.004,y:.5,w:.57,h:.034,ang:90,speed:2,dir:0,emitDye:false},{type:'window',x:.996,y:.5,w:.57,h:.034,ang:90,speed:0,dir:0}];
+const PRESETS={
+  tunnel:()=>[...tunnelWins(),polyObj(naca('0012'),.4,.5,5)],
+  cyl:()=>[...tunnelWins(),{type:'circle',x:.3,y:.5,w:.04,h:.04}],
+  cross:()=>[...room(),win(.2,.36,1.5),win(.8,.66),...furn()],
+  heat:()=>[...room(),win(.5,.2,0,0,0),win(.2,.68),{type:'heater',x:.5,y:.72,w:.03,h:.051}],
+  ac:()=>[...room(),win(.8,.66),{type:'cooler',x:.3,y:.3,w:.03,h:.051},...furn()],
+  empty:()=>room()
+};
+const undoStack=[];
+function pushUndo(){const j=JSON.stringify(state.objects);if(undoStack[undoStack.length-1]!==j){undoStack.push(j);if(undoStack.length>60)undoStack.shift();}}
+function setObjects(arr){
+  state.objects=arr;state.nextId=arr.reduce((m,o)=>Math.max(m,o.id||0),0)+1;state.selected=null;syncControls();rebuildSolid();
+}
+function undo(){const j=undoStack.pop();if(j===undefined)return;
+  if(j===JSON.stringify(state.objects)&&undoStack.length)return undo();setObjects(JSON.parse(j));}
+function loadPreset(n){if(!PRESETS[n])return;pushUndo();setObjects(PRESETS[n]().map((o,i)=>({id:i+1,...o})));
+  [U,V,U0,V0,P,D,D0,Tm,Tm0].forEach(a=>a.fill(0));}
+ui.undoBtn.onclick=undo;
+ui.preset.onchange=()=>{loadPreset(ui.preset.value);ui.preset.value='';};
+ui.dupBtn.onclick=()=>{const o=state.selected;if(!o)return;pushUndo();const c={...JSON.parse(JSON.stringify(o)),id:state.nextId++,x:clamp(o.x+.03,.01,.99),y:clamp(o.y+.03,.01,.99)};
+  state.objects.push(c);state.selected=c;syncControls();rebuildSolid();};
+ui.exportBtn.onclick=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify({version:1,objects:state.objects},null,1)],{type:'application/json'}));a.download='room-layout.json';a.click();URL.revokeObjectURL(a.href);};
+ui.importBtn.onclick=()=>ui.importFile.click();
+ui.importFile.onchange=()=>{const f=ui.importFile.files[0];if(!f)return;const r=new FileReader();
+  r.onload=()=>{try{const d=JSON.parse(r.result),arr=Array.isArray(d)?d:d.objects;if(!Array.isArray(arr))throw 0;pushUndo();setObjects(arr.map((o,i)=>({id:i+1,...o})));}catch(e){alert('Not a valid layout file.');}ui.importFile.value='';};
+  r.readAsText(f);};
+{const d0=ui.deleteObj.onclick,c0=ui.clearBtn.onclick;
+ ui.deleteObj.onclick=()=>{pushUndo();d0();};ui.clearBtn.onclick=()=>{pushUndo();c0();};}
+loadPreset('cross');rebuildSolid();setMode('select');
+
+function renderSwatches(){ui.swatches.innerHTML='';state.stops.forEach((c,i)=>{const e=document.createElement('input');e.type='color';e.value=c;
+  e.oninput=()=>{state.stops[i]=e.value;buildLUT();};ui.swatches.appendChild(e);});}
+Object.keys(PALS).forEach(n=>ui.palSel.add(new Option(n,n)));
+ui.palSel.onchange=()=>{state.stops=[...PALS[ui.palSel.value]];renderSwatches();buildLUT();};
+ui.palRev.onchange=()=>{state.reversePal=ui.palRev.checked;buildLUT();};
+ui.palRand.onclick=()=>{const hue=Math.random()*360,n=5;
+  state.stops=Array.from({length:n},(_,i)=>hsl2hex((hue+i*(25+Math.random()*35))%360,55+Math.random()*30,8+i*(80/(n-1))));renderSwatches();buildLUT();};
+ui.solidCol.oninput=()=>setSolid(ui.solidCol.value);
+ui.partCol.oninput=()=>state.partCol=ui.partCol.value;
+function setResolution(w){alloc(w);rebuildSolid();for(let i=0;i<NP;i++)spawn(i);
+  ui.gridStat.textContent=W+' × '+H;ui.resSel.value=String(w);
+  state.iterations={160:40,240:30,320:24,480:32}[w]||24;ui.iters.value=state.iterations;ui.iterVal.textContent=state.iterations;}   // fewer sweeps on bigger grids (warm-started)
+ui.resSel.onchange=()=>setResolution(+ui.resSel.value);
+renderSwatches();setFluid('air');setResolution(RES0);
+let last=performance.now(),acc=0;
+function loop(now){
+  acc+=Math.min(.06,(now-last)/1000);last=now;
+  if(state.running){   // adaptive: if the grid is too heavy, run in slow motion instead of freezing the page
+    const t0=performance.now();let n=0;
+    while(acc>=state.dt&&n<6){step();acc-=state.dt;n++;if(performance.now()-t0>14){acc=0;break;}}
+    if(n===6)acc=0;
+  }else acc=0;
+  render();requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
