@@ -19,3 +19,4 @@ all videos = https://www.youtube.com/@a98k/videos
 [ai slop]
 keeb = keeb
 flooid = flooid
+repo reader = repo_reader
