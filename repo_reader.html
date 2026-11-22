@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Repo Reader</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<meta name="theme-color" content="#11111b">
+<meta name="description" content="read code from any github repo on your phone. pick a branch, pick a file, read it.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📖</text></svg>">
+<style>
+:root{--ink:aliceblue;--text:#cdd6f4;--mute:#a6a6d6;--line:#62629b;--card:rgba(98,98,155,.22);--surface:#181825;--code-bg:#11111b;--green:#a6e3a1;--mauve:#cba6f7;--name:#cba6f7;--fs:14px;color-scheme:dark}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
+html,body{min-height:100%;margin:0}
+html{-webkit-text-size-adjust:100%}
+body{font:15px/1.5 'JetBrains Mono',ui-monospace,monospace;color:var(--ink);background-color:#11111b;background-image:radial-gradient(circle at 1px 1px,rgba(205,214,244,.075) 1px,transparent 1.2px),linear-gradient(to bottom,rgba(17,17,27,.94),rgba(86,76,129,.96));background-size:24px 24px,100% 100%;background-attachment:fixed;background-repeat:repeat,no-repeat;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+button,input,select{font:inherit;color:inherit}
+input,select{font-size:16px;width:100%;padding:12px 14px;border:2px solid var(--line);border-radius:10px;background:rgba(17,17,27,.72);min-height:48px}
+input::placeholder{color:var(--mute)}
+button{border:2px solid var(--line);background:var(--card);border-radius:10px;padding:10px 14px;cursor:pointer;min-height:44px}
+button.primary{background:var(--green);border-color:var(--green);color:#11111b;font-weight:600}
+button:hover{opacity:.85}
+:focus-visible{outline:2px solid var(--text);outline-offset:3px}
+#app{max-width:860px;margin:0 auto;padding:16px 18px 60px}
+.hero{text-align:center;margin:40px 0 8px}
+.big{font-size:clamp(40px,11vw,84px);line-height:1.05;font-weight:800;color:var(--name);margin:0;overflow-wrap:anywhere}
+.cursor{display:inline-block;animation:blink 1s steps(1,end) infinite}
+@keyframes blink{0%,49%{opacity:1}50%,100%{opacity:0}}
+@media (prefers-reduced-motion:reduce){.cursor{animation:none}}
+.tag{text-align:center;color:var(--text);max-width:520px;margin:12px auto 28px}
+.row{display:flex;gap:8px;margin-bottom:10px}
+.row>*:first-child{flex:1;min-width:0}
+.mute{color:var(--mute);font-size:13px}
+.err{color:#f38ba8;margin:10px 0}
+.recent button{display:block;width:100%;text-align:left;margin-top:6px}
+h2{font-size:22px;margin:44px 0 14px;font-weight:700}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+.card{background:var(--card);border:2px solid var(--line);border-radius:14px;padding:14px 16px}
+.card h3{margin:0 0 6px;font-size:16px;color:var(--mauve)}
+.card p{margin:0;color:var(--text);font-size:14px}
+.crumbs{display:flex;flex-wrap:wrap;gap:2px;margin:12px 0;font-size:14px;color:var(--mute)}
+.crumbs button{border:0;background:none;padding:6px;color:var(--mauve);min-height:40px}
+.list{background:var(--card);border:2px solid var(--line);border-radius:14px;overflow:hidden}
+.item{display:flex;align-items:center;gap:10px;width:100%;border:0;border-bottom:1px solid rgba(98,98,155,.5);border-radius:0;background:none;text-align:left;padding:13px 14px;min-height:52px}
+.item:last-child{border-bottom:0}
+.item:active{background:rgba(98,98,155,.4)}
+.item .n{flex:1;min-width:0;overflow-wrap:anywhere}
+.item .p{display:block;font-size:12px;color:var(--mute)}
+.item .s{font-size:12px;color:var(--mute);white-space:nowrap}
+.dir .n{font-weight:600;color:var(--mauve)}
+footer{text-align:center;margin-top:60px;color:var(--mute);font-size:14px}
+footer a{color:var(--mute)}
+details summary{cursor:pointer;min-height:44px;display:flex;align-items:center}
+#reader{position:fixed;inset:0;background:var(--code-bg);display:none;flex-direction:column;z-index:5;padding:env(safe-area-inset-top) 0 0}
+#reader.on{display:flex}
+.bar{display:flex;align-items:center;gap:6px;padding:8px;border-bottom:2px solid var(--line);background:var(--surface)}
+.bar .t{flex:1;min-width:0;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px}
+.bar button{padding:8px 12px}
+.tools{display:none;gap:6px;padding:8px;border-bottom:1px solid var(--line);background:var(--surface);flex-wrap:wrap}
+.tools.on{display:flex}
+.tools button{flex:1 1 auto;font-size:13px}
+#scroll{flex:1;overflow:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding-bottom:env(safe-area-inset-bottom)}
+.code{display:flex;min-width:100%;width:max-content;font:var(--fs)/1.6 'JetBrains Mono',ui-monospace,Menlo,monospace}
+.code pre{margin:0;padding:12px 0;font:inherit;tab-size:4}
+.gut{position:sticky;left:0;padding:12px 10px!important;text-align:right;color:#6c7086;background:var(--code-bg);border-right:1px solid rgba(98,98,155,.5);user-select:none}
+.src{padding:12px 14px!important;color:var(--text)}
+.wrap .gut{display:none}.wrap .code{width:100%}.wrap .src{white-space:pre-wrap;overflow-wrap:anywhere}
+.hljs{background:transparent!important;padding:0!important;color:var(--text)}
+.hljs-keyword,.hljs-selector-tag,.hljs-literal{color:#cba6f7}.hljs-string,.hljs-regexp,.hljs-addition{color:#a6e3a1}.hljs-number,.hljs-symbol,.hljs-bullet{color:#fab387}.hljs-comment,.hljs-quote{color:#6c7086;font-style:italic}.hljs-title,.hljs-section,.hljs-function{color:#89b4fa}.hljs-built_in,.hljs-type{color:#f9e2af}.hljs-attr,.hljs-attribute,.hljs-variable,.hljs-template-variable,.hljs-property{color:#89dceb}.hljs-tag,.hljs-name,.hljs-meta,.hljs-deletion{color:#f38ba8}
+.msg{padding:24px;color:var(--mute)}
+#reader img{max-width:100%;margin:16px;align-self:flex-start}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="intro">
+    <div class="hero"><h1 class="big" id="name">repo_reader<span class="cursor">_</span></h1></div>
+    <p class="tag">read code from any github repo on your phone. paste a link, pick a branch, pick a file, read.</p>
+  </div>
+  <noscript><p class="err">JavaScript is turned off here. Open this page in Safari or Chrome from its web address instead of from a file preview.</p></noscript>
+  <form id="f" class="row" action="javascript:void(0)">
+    <input id="url" placeholder="github.com/owner/repo" autocapitalize="off" autocorrect="off" spellcheck="false" inputmode="url">
+    <button class="primary">open</button>
+  </form>
+  <div id="err" class="err" hidden></div>
+  <div id="recent" class="recent"></div>
+
+  <div id="intro2">
+    <h2>built for phones</h2>
+    <div class="cards">
+      <div class="card"><h3>wrap or scroll</h3><p>wrap long lines to fit your screen, or turn it off for line numbers and side scrolling.</p></div>
+      <div class="card"><h3>your text size</h3><p>tap Aa in any file to make the code bigger or smaller. it remembers your choice.</p></div>
+      <div class="card"><h3>big tap targets</h3><p>every row is at least 48px tall, and inputs never trigger zoom on iOS.</p></div>
+      <div class="card"><h3>back just works</h3><p>your phone's back gesture closes a file and returns you to the list.</p></div>
+      <div class="card"><h3>find files fast</h3><p>search every path in a branch, or tap through folders with breadcrumbs.</p></div>
+      <div class="card"><h3>shareable links</h3><p>the address updates as you browse, so you can bookmark or home-screen a file.</p></div>
+    </div>
+    <p class="mute" style="margin-top:14px">tip: on iPhone use Share → Add to Home Screen to open it like an app.</p>
+  </div>
+
+  <div id="repo" hidden>
+    <div class="row"><select id="branch" aria-label="Branch"></select></div>
+    <input id="q" type="search" placeholder="search files in this branch" autocapitalize="off" spellcheck="false">
+    <div id="crumbs" class="crumbs"></div>
+    <div id="list" class="list"></div>
+    <p id="note" class="mute"></p>
+  </div>
+
+  <details style="margin-top:20px">
+    <summary class="mute">token (private repos or rate limits)</summary>
+    <div class="row" style="margin-top:8px"><input id="tok" type="password" placeholder="GitHub personal access token" autocomplete="off"><button id="saveTok">save</button></div>
+    <p class="mute">stored only in this browser. read-only contents access is enough.</p>
+  </details>
+  <footer>made by hand, one file · <a href="https://xa98kx.github.io">a98k</a></footer>
+</div>
+
+<div id="reader">
+  <div class="bar">
+    <button id="back" aria-label="Back">←</button>
+    <span class="t" id="title"></span>
+    <button id="gear" aria-label="Display options">Aa</button>
+  </div>
+  <div class="tools" id="tools">
+    <button id="smaller">A−</button><button id="bigger">A+</button>
+    <button id="wrapBtn">wrap</button><button id="topBtn">top</button><button id="botBtn">bottom</button>
+    <button id="rawBtn">open on github</button>
+  </div>
+  <div id="scroll"></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+const S = {owner:'', repo:'', branch:'', branches:[], files:[], dir:'', file:null, wrap:false, fs:14, tok:''};
+const store = {
+  get(k, d){ try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch(e){ return d; } },
+  set(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} }
+};
+S.wrap = store.get('wrap', innerWidth < 700); S.fs = store.get('fs', 14); S.tok = store.get('tok', '');
+$('tok').value = S.tok;
+document.documentElement.style.setProperty('--fs', S.fs + 'px');
+(function(){ const c = ['#cba6f7','#f38ba8','#fab387','#f9e2af','#a6e3a1','#94e2d5']; document.documentElement.style.setProperty('--name', c[Math.floor(Math.random()*c.length)]); })();
+
+const IMG = /\.(png|jpe?g|gif|webp|svg|ico|bmp)$/i;
+const LANG = {js:'javascript',mjs:'javascript',cjs:'javascript',jsx:'javascript',ts:'typescript',tsx:'typescript',py:'python',rb:'ruby',rs:'rust',go:'go',java:'java',kt:'kotlin',c:'c',h:'c',cpp:'cpp',cc:'cpp',hpp:'cpp',cs:'csharp',php:'php',sh:'bash',bash:'bash',zsh:'bash',yml:'yaml',yaml:'yaml',json:'json',md:'markdown',html:'xml',xml:'xml',svg:'xml',css:'css',scss:'scss',sql:'sql',swift:'swift',toml:'ini',ini:'ini',lua:'lua',dart:'dart',vue:'xml'};
+
+function showErr(m){ const e = $('err'); e.textContent = m || ''; e.hidden = !m; if (m) e.scrollIntoView({block:'nearest'}); }
+window.addEventListener('error', ev => showErr('Something went wrong: ' + ev.message));
+window.addEventListener('unhandledrejection', ev => showErr('Something went wrong: ' + (ev.reason && ev.reason.message || ev.reason)));
+if (location.protocol === 'file:') showErr('This page is open as a local file. It works best when hosted (for example on GitHub Pages) and opened in your browser.');
+function hdr(extra){ const h = Object.assign({Accept:'application/vnd.github+json'}, extra||{}); if (S.tok) h.Authorization = 'Bearer ' + S.tok; return h; }
+async function api(path, extra){
+  let r;
+  try { r = await fetch('https://api.github.com' + path, {headers: hdr(extra)}); }
+  catch (e) { throw new Error('Could not reach GitHub. Check your connection, or open this page directly in your browser rather than in a preview.'); }
+  if (!r.ok) throw new Error(r.status === 404 ? 'Not found. If the repo is private, add a token below.' : r.status === 403 || r.status === 429 ? 'GitHub rate limit reached. Add a token below or try again later.' : 'GitHub error ' + r.status);
+  return r;
+}
+
+// Accepts full URLs (incl. /tree/ and /blob/ links) or owner/repo
+function parseInput(s){
+  s = s.trim().replace(/^https?:\/\//, '').replace(/^(www\.)?github\.com\//, '').replace(/\.git$/, '');
+  const p = s.split(/[?#]/)[0].split('/').filter(Boolean);
+  if (p.length < 2) return null;
+  const out = {owner:p[0], repo:p[1].replace(/\.git$/, ''), rest:''};
+  if ((p[2] === 'tree' || p[2] === 'blob') && p.length > 3) { out.rest = p.slice(3).join('/'); out.kind = p[2]; }
+  return out;
+}
+
+async function openRepo(input, want){
+  showErr('');
+  const p = parseInput(input);
+  if (!p) return showErr('Enter a repo like owner/repo or paste its GitHub link.');
+  $('list').innerHTML = '<div class="msg">Opening ' + esc(p.owner + '/' + p.repo) + '…</div>'; $('repo').hidden = false; $('intro').hidden = $('intro2').hidden = true; $('repo').scrollIntoView({block:'start'});
+  try {
+    const info = await (await api(`/repos/${p.owner}/${p.repo}`)).json();
+    S.owner = info.owner.login; S.repo = info.name;
+    let all = [], page = 1;
+    while (page <= 5) {
+      const b = await (await api(`/repos/${S.owner}/${S.repo}/branches?per_page=100&page=${page}`)).json();
+      all = all.concat(b.map(x => x.name)); if (b.length < 100) break; page++;
+    }
+    S.branches = all;
+    // resolve branch + path from a /tree/ or /blob/ link, or from saved state
+    let branch = info.default_branch, path = '';
+    const rest = (want && want.ref) ? want.ref + (want.path ? '/' + want.path : '') : p.rest;
+    if (rest) {
+      const hit = all.filter(b => rest === b || rest.startsWith(b + '/')).sort((a, b) => b.length - a.length)[0];
+      if (hit) { branch = hit; path = rest.slice(hit.length + 1); }
+    }
+    $('branch').innerHTML = all.map(b => `<option>${esc(b)}</option>`).join('');
+    saveRecent(`${S.owner}/${S.repo}`);
+    await loadBranch(branch, path);
+  } catch (e) { $('repo').hidden = true; $('intro').hidden = $('intro2').hidden = false; showErr(e.message); }
+}
+
+async function loadBranch(branch, path){
+  S.branch = branch; $('branch').value = branch;
+  $('list').innerHTML = '<div class="msg">Loading files…</div>';
+  try {
+    const t = await (await api(`/repos/${S.owner}/${S.repo}/git/trees/${encodeURIComponent(branch)}?recursive=1`)).json();
+    S.files = t.tree.filter(x => x.type === 'blob');
+    $('note').textContent = t.truncated ? 'This repo is very large, so some files may be missing from the list.' : '';
+    const f = path && S.files.find(x => x.path === path);
+    S.dir = f ? path.split('/').slice(0, -1).join('/') : (path && S.files.some(x => x.path.startsWith(path + '/')) ? path : '');
+    $('q').value = ''; renderList(); sync();
+    if (f) openFile(f);
+  } catch (e) { $('list').innerHTML = `<div class="msg">${esc(e.message)}</div>`; }
+}
+
+function esc(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function fmt(n){ return n < 1024 ? n + ' B' : n < 1048576 ? (n/1024).toFixed(1) + ' KB' : (n/1048576).toFixed(1) + ' MB'; }
+
+function renderList(){
+  const q = $('q').value.trim().toLowerCase(), L = $('list');
+  if (q) {
+    const m = S.files.filter(f => f.path.toLowerCase().includes(q)).slice(0, 200);
+    $('crumbs').innerHTML = `<span class="mute">${m.length} match${m.length === 1 ? '' : 'es'}</span>`;
+    L.innerHTML = m.map((f, i) => fileRow(f, f.path.split('/').pop(), f.path.split('/').slice(0, -1).join('/'), i)).join('') || '<div class="msg">No files match.</div>';
+    L._m = m; return;
+  }
+  const pre = S.dir ? S.dir + '/' : '', dirs = new Set(), files = [];
+  for (const f of S.files) {
+    if (!f.path.startsWith(pre)) continue;
+    const rel = f.path.slice(pre.length), i = rel.indexOf('/');
+    if (i < 0) files.push(f); else dirs.add(rel.slice(0, i));
+  }
+  files.sort((a, b) => a.path.localeCompare(b.path));
+  const parts = S.dir ? S.dir.split('/') : [];
+  $('crumbs').innerHTML = `<button data-d="">${esc(S.repo)}</button>` + parts.map((p, i) => `/<button data-d="${esc(parts.slice(0, i + 1).join('/'))}">${esc(p)}</button>`).join('');
+  L.innerHTML = [...dirs].sort().map(d => `<button class="item dir" data-d="${esc(pre + d)}"><span>📁</span><span class="n">${esc(d)}</span></button>`).join('')
+    + files.map((f, i) => fileRow(f, f.path.slice(pre.length), '', i)).join('') || '<div class="msg">Empty folder.</div>';
+  L._m = files;
+}
+function fileRow(f, name, sub, i){
+  return `<button class="item" data-i="${i}"><span>📄</span><span class="n">${esc(name)}${sub ? `<span class="p">${esc(sub)}</span>` : ''}</span><span class="s">${fmt(f.size || 0)}</span></button>`;
+}
+
+$('list').addEventListener('click', e => {
+  const b = e.target.closest('.item'); if (!b) return;
+  if (b.dataset.d !== undefined) { S.dir = b.dataset.d; renderList(); sync(); window.scrollTo(0, 0); }
+  else openFile($('list')._m[+b.dataset.i]);
+});
+$('crumbs').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { S.dir = b.dataset.d; renderList(); sync(); } });
+$('q').addEventListener('input', renderList);
+$('branch').addEventListener('change', e => loadBranch(e.target.value, ''));
+
+async function openFile(f){
+  S.file = f;
+  if (!S.reader) { try { history.pushState({r:1}, '', location.href); } catch (e) {} S.reader = true; }
+  sync();
+  $('title').textContent = f.path.split('/').pop();
+  $('reader').classList.add('on'); $('tools').classList.remove('on');
+  const box = $('scroll'); box.innerHTML = '<div class="msg">Loading…</div>';
+  const raw = `https://raw.githubusercontent.com/${S.owner}/${S.repo}/refs/heads/${S.branch.split('/').map(encodeURIComponent).join('/')}/${f.path.split('/').map(encodeURIComponent).join('/')}`;
+  try {
+    if (IMG.test(f.path) && !S.tok) { box.innerHTML = `<img src="${raw}" alt="${esc(f.path)}">`; return; }
+    if (f.size > 1500000) { box.innerHTML = '<div class="msg">This file is over 1.5 MB, so it is too large to display here.</div>'; return; }
+    let text;
+    if (S.tok) {
+      const r = await api(`/repos/${S.owner}/${S.repo}/contents/${f.path.split('/').map(encodeURIComponent).join('/')}?ref=${encodeURIComponent(S.branch)}`, {Accept:'application/vnd.github.raw+json'});
+      text = await r.text();
+    } else {
+      const r = await fetch(raw); if (!r.ok) throw new Error('Could not load file (' + r.status + ').'); text = await r.text();
+    }
+    if (text.includes('\u0000')) { box.innerHTML = '<div class="msg">This looks like a binary file, so it can’t be shown as text.</div>'; return; }
+    renderCode(text, f.path);
+  } catch (e) { box.innerHTML = `<div class="msg">${esc(e.message)}</div>`; }
+}
+
+function renderCode(text, path){
+  const ext = (path.split('.').pop() || '').toLowerCase(), lang = LANG[ext];
+  let html;
+  try {
+    if (text.length > 300000) html = esc(text);
+    else if (lang && hljs.getLanguage(lang)) html = hljs.highlight(text, {language: lang}).value;
+    else if (text.length < 80000) html = hljs.highlightAuto(text).value;
+    else html = esc(text);
+  } catch (e) { html = esc(text); }
+  const n = text.split('\n').length;
+  const nums = Array.from({length: n}, (_, i) => i + 1).join('\n');
+  const box = $('scroll');
+  box.innerHTML = `<div class="code ${S.wrap ? 'wrap' : ''}" id="code"><pre class="gut" aria-hidden="true">${nums}</pre><pre class="src"><code class="hljs">${html}</code></pre></div>`;
+  box.scrollTo(0, 0);
+}
+
+function hideReader(){ $('reader').classList.remove('on'); S.file = null; S.reader = false; sync(); }
+function closeReader(){ if (history.state && history.state.r) history.back(); else hideReader(); }
+$('topBtn').onclick = () => $('scroll').scrollTo({top:0});
+$('botBtn').onclick = () => $('scroll').scrollTo({top:$('scroll').scrollHeight});
+$('back').onclick = closeReader;
+$('gear').onclick = () => $('tools').classList.toggle('on');
+$('wrapBtn').onclick = () => { S.wrap = !S.wrap; store.set('wrap', S.wrap); const c = $('code'); if (c) c.classList.toggle('wrap', S.wrap); upd(); };
+function setFs(d){ S.fs = Math.min(24, Math.max(9, S.fs + d)); store.set('fs', S.fs); document.documentElement.style.setProperty('--fs', S.fs + 'px'); }
+$('smaller').onclick = () => setFs(-1); $('bigger').onclick = () => setFs(1);
+$('rawBtn').onclick = () => { if (S.file) window.open(`https://github.com/${S.owner}/${S.repo}/blob/${S.branch}/${S.file.path}`, '_blank', 'noopener'); };
+function upd(){ $('wrapBtn').textContent = S.wrap ? 'wrap: on' : 'wrap: off'; }
+upd();
+
+$('f').addEventListener('submit', e => { e.preventDefault(); openRepo($('url').value); });
+$('saveTok').onclick = () => { S.tok = $('tok').value.trim(); store.set('tok', S.tok); showErr(''); };
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && S.file) closeReader(); });
+
+// Shareable URL: ?repo=owner/name&ref=branch&path=dir/or/file
+function sync(){
+  if (!S.repo) return;
+  const u = new URL(location.href); u.search = '';
+  u.searchParams.set('repo', S.owner + '/' + S.repo); u.searchParams.set('ref', S.branch);
+  const p = S.file ? S.file.path : S.dir; if (p) u.searchParams.set('path', p);
+  try { history.replaceState(history.state, '', u); } catch (e) {}
+}
+window.addEventListener('popstate', () => { if (S.reader) hideReader(); });
+
+function saveRecent(r){ const a = [r, ...store.get('recent', []).filter(x => x !== r)].slice(0, 6); store.set('recent', a); showRecent(); }
+function showRecent(){
+  const a = store.get('recent', []);
+  $('recent').innerHTML = a.length && $('repo').hidden ? `<div class="mute">recent</div>` + a.map(r => `<button data-r="${esc(r)}">${esc(r)}</button>`).join('') : '';
+}
+$('recent').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { $('url').value = b.dataset.r; openRepo(b.dataset.r); } });
+showRecent();
+
+const qs = new URLSearchParams(location.search);
+if (qs.get('repo')) { $('url').value = qs.get('repo'); openRepo(qs.get('repo'), {ref: qs.get('ref') || '', path: qs.get('path') || ''}); }
+</script>
+</body>
+</html>
