@@ -74,6 +74,7 @@ details summary{cursor:pointer;min-height:44px;display:flex;align-items:center}
 .hljs{background:transparent!important;padding:0!important;color:var(--text)}
 .hljs-keyword,.hljs-selector-tag,.hljs-literal{color:#cba6f7}.hljs-string,.hljs-regexp,.hljs-addition{color:#a6e3a1}.hljs-number,.hljs-symbol,.hljs-bullet{color:#fab387}.hljs-comment,.hljs-quote{color:#6c7086;font-style:italic}.hljs-title,.hljs-section,.hljs-function{color:#89b4fa}.hljs-built_in,.hljs-type{color:#f9e2af}.hljs-attr,.hljs-attribute,.hljs-variable,.hljs-template-variable,.hljs-property{color:#89dceb}.hljs-tag,.hljs-name,.hljs-meta,.hljs-deletion{color:#f38ba8}
 .msg{padding:24px;color:var(--mute)}
+.row.two button{flex:1}
 .sample{background:rgba(17,17,27,.72);border:2px solid var(--line);border-radius:10px;padding:12px;overflow:auto;font-size:13px;color:var(--text);margin:8px 0 14px;white-space:pre}
 #agents .card h3{margin-top:14px}#agents .card h3:first-child{margin-top:0}
 #reader img{max-width:100%;margin:16px;align-self:flex-start}
@@ -108,6 +109,8 @@ details summary{cursor:pointer;min-height:44px;display:flex;align-items:center}
 
   <div id="repo" hidden>
     <div class="row"><select id="branch" aria-label="Branch"></select></div>
+    <div class="row two"><button id="zipBranch">branch .zip</button><button id="zipDir">this folder .zip</button></div>
+    <p id="dlStatus" class="mute" hidden></p>
     <input id="q" type="search" placeholder="search files in this branch" autocapitalize="off" spellcheck="false">
     <div id="crumbs" class="crumbs"></div>
     <div id="list" class="list"></div>
@@ -122,7 +125,8 @@ details summary{cursor:pointer;min-height:44px;display:flex;align-items:center}
       <p>fetch these urls directly. replace OWNER, REPO, BRANCH and PATH.</p>
       <div class="sample">branches:  https://api.github.com/repos/OWNER/REPO/branches
 all files: https://api.github.com/repos/OWNER/REPO/git/trees/BRANCH?recursive=1
-one file:  https://raw.githubusercontent.com/OWNER/REPO/refs/heads/BRANCH/PATH</div>
+one file:  https://raw.githubusercontent.com/OWNER/REPO/refs/heads/BRANCH/PATH
+zip:       https://github.com/OWNER/REPO/archive/refs/heads/BRANCH.zip</div>
       <h3>2. agents that run a browser (javascript runs)</h3>
       <div class="sample">file as plain text: <span class="base">PAGE_URL</span>?repo=OWNER/REPO&amp;ref=BRANCH&amp;path=PATH&amp;view=text
 file list:         <span class="base">PAGE_URL</span>?repo=OWNER/REPO&amp;ref=BRANCH&amp;view=text
@@ -152,7 +156,7 @@ js api on this page:
   </div>
   <div class="tools" id="tools">
     <button id="smaller">A−</button><button id="bigger">A+</button>
-    <button id="wrapBtn">wrap</button><button id="cpCode">copy code</button><button id="cpAi">copy for ai</button><button id="cpLink">copy ai link</button><button id="topBtn">top</button><button id="botBtn">bottom</button>
+    <button id="wrapBtn">wrap</button><button id="dlFile">download file</button><button id="cpCode">copy code</button><button id="cpAi">copy for ai</button><button id="cpLink">copy ai link</button><button id="topBtn">top</button><button id="botBtn">bottom</button>
     <button id="rawBtn">open on github</button>
   </div>
   <div id="scroll"></div>
@@ -233,7 +237,7 @@ async function loadBranch(branch, path){
     $('note').textContent = t.truncated ? 'This repo is very large, so some files may be missing from the list.' : '';
     const f = path && S.files.find(x => x.path === path);
     S.dir = f ? path.split('/').slice(0, -1).join('/') : (path && S.files.some(x => x.path.startsWith(path + '/')) ? path : '');
-    $('q').value = ''; renderList(); sync();
+    $('q').value = ''; dlMsg(''); renderList(); sync();
     if (f) openFile(f);
   } catch (e) { $('list').innerHTML = `<div class="msg">${esc(e.message)}</div>`; }
 }
@@ -360,6 +364,64 @@ $('cpCode').onclick = e => { if (S.text != null) copy(e.currentTarget, S.text); 
 $('cpAi').onclick = e => { if (S.text == null) return; const x = S.file.path.split('.').pop() || ''; copy(e.currentTarget, `${S.owner}/${S.repo} @ ${S.branch}\n${S.file.path}\n\n\`\`\`${x}\n${S.text}\n\`\`\`\n`); };
 $('cpLink').onclick = e => { if (!S.file) return; const u = new URL(location.href); u.search = ''; u.searchParams.set('repo', S.owner + '/' + S.repo); u.searchParams.set('ref', S.branch); u.searchParams.set('path', S.file.path); u.searchParams.set('view', 'text'); copy(e.currentTarget, u.href); };
 if (location.protocol.startsWith('http')) document.querySelectorAll('.base').forEach(el => el.textContent = location.origin + location.pathname);
+
+// ---- downloads
+function saveBlob(blob, name){
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 4000);
+}
+function dlMsg(m){ const e = $('dlStatus'); e.textContent = m || ''; e.hidden = !m; }
+async function getBytes(path){
+  const enc = path.split('/').map(encodeURIComponent).join('/');
+  if (S.tok) return (await api(`/repos/${S.owner}/${S.repo}/contents/${enc}?ref=${encodeURIComponent(S.branch)}`, {Accept: 'application/vnd.github.raw+json'})).arrayBuffer();
+  const r = await fetch(`https://raw.githubusercontent.com/${S.owner}/${S.repo}/refs/heads/${S.branch.split('/').map(encodeURIComponent).join('/')}/${enc}`);
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+  return r.arrayBuffer();
+}
+function loadZipLib(){
+  if (window.JSZip) return Promise.resolve();
+  return new Promise((res, rej) => {
+    const s = document.createElement('script'); s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+    s.onload = res; s.onerror = () => rej(new Error('Could not load the zip library. Check your connection.')); document.head.appendChild(s);
+  });
+}
+$('zipBranch').onclick = () => {
+  dlMsg('Starting download from GitHub. Private repo? Use “this folder .zip” with a saved token instead.');
+  location.assign(`https://github.com/${S.owner}/${S.repo}/archive/refs/heads/${S.branch.split('/').map(encodeURIComponent).join('/')}.zip`);
+};
+let zipping = false;
+$('zipDir').onclick = async () => {
+  if (zipping) return;
+  const pre = S.dir ? S.dir + '/' : '', fs = S.files.filter(f => f.path.startsWith(pre));
+  const total = fs.reduce((a, f) => a + (f.size || 0), 0);
+  if (!fs.length) return dlMsg('Nothing to download here.');
+  if (fs.length > 500 || total > 60e6) return dlMsg(`That’s ${fs.length} files (${fmt(total)}), too much to zip in the browser. Use “branch .zip” or open a smaller folder.`);
+  zipping = true; const btn = $('zipDir'); btn.disabled = true;
+  try {
+    dlMsg('Loading zip tool…'); await loadZipLib();
+    const top = S.dir ? S.dir.split('/').pop() : `${S.repo}-${S.branch.replace(/\//g, '-')}`;
+    const z = new JSZip(), failed = []; let done = 0, i = 0;
+    const worker = async () => {
+      while (i < fs.length) {
+        const f = fs[i++];
+        try { z.file(top + '/' + f.path.slice(pre.length), await getBytes(f.path), {binary: true}); } catch (e) { failed.push(f.path); }
+        dlMsg(`Fetching files ${++done}/${fs.length}…`);
+      }
+    };
+    await Promise.all(Array.from({length: 6}, worker));
+    dlMsg('Building zip…');
+    const blob = await z.generateAsync({type: 'blob'}, m => dlMsg(`Building zip ${Math.round(m.percent)}%`));
+    saveBlob(blob, top + '.zip');
+    dlMsg(`Downloaded ${top}.zip (${fs.length - failed.length} files)` + (failed.length ? `. ${failed.length} failed and were skipped.` : '.'));
+  } catch (e) { dlMsg(e.message); }
+  zipping = false; btn.disabled = false;
+};
+$('dlFile').onclick = async e => {
+  if (!S.file) return; const b = e.currentTarget, o = b.textContent; b.textContent = 'downloading…';
+  try { saveBlob(new Blob([await getBytes(S.file.path)]), S.file.path.split('/').pop()); b.textContent = 'saved'; }
+  catch (err) { b.textContent = 'failed'; }
+  setTimeout(() => b.textContent = o, 1500);
+};
 
 // ---- agent access: plain-text view and a small js api
 async function agentLoad(input, ref){
