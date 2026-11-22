@@ -6,6 +6,7 @@
 <title>Repo Reader</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="alternate" type="text/plain" href="llms.txt" title="instructions for ai agents">
 <meta name="theme-color" content="#11111b">
 <meta name="description" content="read code from any github repo on your phone. pick a branch, pick a file, read it.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📖</text></svg>">
@@ -66,10 +67,15 @@ details summary{cursor:pointer;min-height:44px;display:flex;align-items:center}
 .code pre{margin:0;padding:12px 0;font:inherit;tab-size:4}
 .gut{position:sticky;left:0;padding:12px 10px!important;text-align:right;color:#6c7086;background:var(--code-bg);border-right:1px solid rgba(98,98,155,.5);user-select:none}
 .src{padding:12px 14px!important;color:var(--text)}
-.wrap .gut{display:none}.wrap .code{width:100%}.wrap .src{white-space:pre-wrap;overflow-wrap:anywhere}
+.code.wrap{width:100%;max-width:100%}
+.code.wrap .gut{display:none}
+.code.wrap .src{flex:1 1 auto;min-width:0;max-width:100%;white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word}
+.code.wrap .src code{white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word}
 .hljs{background:transparent!important;padding:0!important;color:var(--text)}
 .hljs-keyword,.hljs-selector-tag,.hljs-literal{color:#cba6f7}.hljs-string,.hljs-regexp,.hljs-addition{color:#a6e3a1}.hljs-number,.hljs-symbol,.hljs-bullet{color:#fab387}.hljs-comment,.hljs-quote{color:#6c7086;font-style:italic}.hljs-title,.hljs-section,.hljs-function{color:#89b4fa}.hljs-built_in,.hljs-type{color:#f9e2af}.hljs-attr,.hljs-attribute,.hljs-variable,.hljs-template-variable,.hljs-property{color:#89dceb}.hljs-tag,.hljs-name,.hljs-meta,.hljs-deletion{color:#f38ba8}
 .msg{padding:24px;color:var(--mute)}
+.sample{background:rgba(17,17,27,.72);border:2px solid var(--line);border-radius:10px;padding:12px;overflow:auto;font-size:13px;color:var(--text);margin:8px 0 14px;white-space:pre}
+#agents .card h3{margin-top:14px}#agents .card h3:first-child{margin-top:0}
 #reader img{max-width:100%;margin:16px;align-self:flex-start}
 </style>
 </head>
@@ -108,6 +114,28 @@ details summary{cursor:pointer;min-height:44px;display:flex;align-items:center}
     <p id="note" class="mute"></p>
   </div>
 
+  <div id="agents">
+    <h2>for ai agents</h2>
+    <div class="card" id="agent-docs">
+      <p>this site is a viewer for github repos. an agent can use it, or skip it and go straight to github, to read code and explain it. public repos only, unless the person saved a token in their own browser. never put tokens in urls.</p>
+      <h3>1. no javascript needed (works for any agent)</h3>
+      <p>fetch these urls directly. replace OWNER, REPO, BRANCH and PATH.</p>
+      <div class="sample">branches:  https://api.github.com/repos/OWNER/REPO/branches
+all files: https://api.github.com/repos/OWNER/REPO/git/trees/BRANCH?recursive=1
+one file:  https://raw.githubusercontent.com/OWNER/REPO/refs/heads/BRANCH/PATH</div>
+      <h3>2. agents that run a browser (javascript runs)</h3>
+      <div class="sample">file as plain text: <span class="base">PAGE_URL</span>?repo=OWNER/REPO&amp;ref=BRANCH&amp;path=PATH&amp;view=text
+file list:         <span class="base">PAGE_URL</span>?repo=OWNER/REPO&amp;ref=BRANCH&amp;view=text
+one folder:        add &amp;path=DIR to the file list url
+js api on this page:
+  await window.repoReader.listFiles('OWNER/REPO', 'BRANCH')
+  await window.repoReader.readFile('OWNER/REPO', 'BRANCH', 'PATH')</div>
+      <p class="mute">ref is optional and defaults to the repo's default branch. the plain text view prints the repo, branch, all branch names, then the file or file list between BEGIN and END markers.</p>
+      <h3>3. suggested way to explain code</h3>
+      <p>list the files, read the README and the entry point, then read the files that matter. in your explanation, name files by path and point to the functions you are describing.</p>
+    </div>
+  </div>
+
   <details style="margin-top:20px">
     <summary class="mute">token (private repos or rate limits)</summary>
     <div class="row" style="margin-top:8px"><input id="tok" type="password" placeholder="GitHub personal access token" autocomplete="off"><button id="saveTok">save</button></div>
@@ -124,7 +152,7 @@ details summary{cursor:pointer;min-height:44px;display:flex;align-items:center}
   </div>
   <div class="tools" id="tools">
     <button id="smaller">A−</button><button id="bigger">A+</button>
-    <button id="wrapBtn">wrap</button><button id="topBtn">top</button><button id="botBtn">bottom</button>
+    <button id="wrapBtn">wrap</button><button id="cpCode">copy code</button><button id="cpAi">copy for ai</button><button id="cpLink">copy ai link</button><button id="topBtn">top</button><button id="botBtn">bottom</button>
     <button id="rawBtn">open on github</button>
   </div>
   <div id="scroll"></div>
@@ -248,7 +276,7 @@ $('q').addEventListener('input', renderList);
 $('branch').addEventListener('change', e => loadBranch(e.target.value, ''));
 
 async function openFile(f){
-  S.file = f;
+  S.file = f; S.text = null;
   if (!S.reader) { try { history.pushState({r:1}, '', location.href); } catch (e) {} S.reader = true; }
   sync();
   $('title').textContent = f.path.split('/').pop();
@@ -279,6 +307,7 @@ function renderCode(text, path){
     else if (text.length < 80000) html = hljs.highlightAuto(text).value;
     else html = esc(text);
   } catch (e) { html = esc(text); }
+  S.text = text;
   const n = text.split('\n').length;
   const nums = Array.from({length: n}, (_, i) => i + 1).join('\n');
   const box = $('scroll');
@@ -321,8 +350,61 @@ function showRecent(){
 $('recent').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { $('url').value = b.dataset.r; openRepo(b.dataset.r); } });
 showRecent();
 
+async function copy(btn, txt){
+  const o = btn.textContent;
+  try { await navigator.clipboard.writeText(txt); }
+  catch (e) { const a = document.createElement('textarea'); a.value = txt; a.style.cssText = 'position:fixed;opacity:0'; document.body.appendChild(a); a.select(); try { document.execCommand('copy'); } catch (_) {} a.remove(); }
+  btn.textContent = 'copied'; setTimeout(() => btn.textContent = o, 1200);
+}
+$('cpCode').onclick = e => { if (S.text != null) copy(e.currentTarget, S.text); };
+$('cpAi').onclick = e => { if (S.text == null) return; const x = S.file.path.split('.').pop() || ''; copy(e.currentTarget, `${S.owner}/${S.repo} @ ${S.branch}\n${S.file.path}\n\n\`\`\`${x}\n${S.text}\n\`\`\`\n`); };
+$('cpLink').onclick = e => { if (!S.file) return; const u = new URL(location.href); u.search = ''; u.searchParams.set('repo', S.owner + '/' + S.repo); u.searchParams.set('ref', S.branch); u.searchParams.set('path', S.file.path); u.searchParams.set('view', 'text'); copy(e.currentTarget, u.href); };
+if (location.protocol.startsWith('http')) document.querySelectorAll('.base').forEach(el => el.textContent = location.origin + location.pathname);
+
+// ---- agent access: plain-text view and a small js api
+async function agentLoad(input, ref){
+  const p = parseInput(input); if (!p) throw new Error('Invalid repo. Use owner/repo or a github.com link.');
+  const info = await (await api(`/repos/${p.owner}/${p.repo}`)).json();
+  const bs = (await (await api(`/repos/${p.owner}/${p.repo}/branches?per_page=100`)).json()).map(x => x.name);
+  let branch = ref || info.default_branch, path = '';
+  if (!ref && p.rest) { const hit = bs.filter(b => p.rest === b || p.rest.startsWith(b + '/')).sort((a, b) => b.length - a.length)[0]; if (hit) { branch = hit; path = p.rest.slice(hit.length + 1); } }
+  const t = await (await api(`/repos/${p.owner}/${p.repo}/git/trees/${encodeURIComponent(branch)}?recursive=1`)).json();
+  return {owner: info.owner.login, repo: info.name, branch, branches: bs, path, truncated: !!t.truncated, files: t.tree.filter(x => x.type === 'blob').map(x => ({path: x.path, size: x.size || 0}))};
+}
+async function getText(o, b, path){
+  const enc = path.split('/').map(encodeURIComponent).join('/');
+  if (S.tok) return (await api(`/repos/${o.owner}/${o.repo}/contents/${enc}?ref=${encodeURIComponent(b)}`, {Accept: 'application/vnd.github.raw+json'})).text();
+  const r = await fetch(`https://raw.githubusercontent.com/${o.owner}/${o.repo}/refs/heads/${b.split('/').map(encodeURIComponent).join('/')}/${enc}`);
+  if (!r.ok) throw new Error('Could not load file (' + r.status + ').');
+  return r.text();
+}
+window.repoReader = {
+  usage: "listFiles(repo, ref?) -> {owner, repo, branch, branches, files:[{path,size}]}. readFile(repo, ref, path) -> string. repo is 'owner/name'.",
+  listFiles: (repo, ref) => agentLoad(repo, ref),
+  readFile: async (repo, ref, path) => { const p = parseInput(repo); if (!p) throw new Error('Invalid repo.'); let b = ref; if (!b) b = (await (await api(`/repos/${p.owner}/${p.repo}`)).json()).default_branch; return getText(p, b, path); }
+};
+async function agentText(repo, ref, path){
+  document.title = 'repo text view';
+  document.body.style.cssText = 'background:#fff;color:#000;margin:0;padding:12px';
+  document.body.innerHTML = '<pre id="agent-output" style="white-space:pre-wrap;word-break:break-word;font:14px/1.45 ui-monospace,Menlo,monospace;margin:0">loading…</pre>';
+  const out = document.getElementById('agent-output');
+  try {
+    const d = await agentLoad(repo, ref); path = path || d.path;
+    const head = `repo: ${d.owner}/${d.repo}\nbranch: ${d.branch}\nbranches: ${d.branches.join(', ')}\n`;
+    const f = path && d.files.find(x => x.path === path);
+    if (f) {
+      const t = await getText(d, d.branch, path);
+      out.textContent = head + `path: ${path}\nlines: ${t.split('\n').length}\n----- BEGIN FILE -----\n${t}\n----- END FILE -----\n`;
+    } else {
+      const pre = path ? path.replace(/\/$/, '') + '/' : '', fs = d.files.filter(x => x.path.startsWith(pre));
+      out.textContent = head + (path ? `directory: ${path}\n` : '') + `files: ${fs.length}${d.truncated ? ' (list truncated by github)' : ''}\n----- BEGIN FILE LIST -----\n` + fs.map(x => `${x.path}  (${x.size} bytes)`).join('\n') + '\n----- END FILE LIST -----\n';
+    }
+  } catch (e) { out.textContent = 'error: ' + e.message; }
+}
+
 const qs = new URLSearchParams(location.search);
-if (qs.get('repo')) { $('url').value = qs.get('repo'); openRepo(qs.get('repo'), {ref: qs.get('ref') || '', path: qs.get('path') || ''}); }
+if (qs.get('repo') && qs.get('view') === 'text') agentText(qs.get('repo'), qs.get('ref') || '', qs.get('path') || '');
+else if (qs.get('repo')) { $('url').value = qs.get('repo'); openRepo(qs.get('repo'), {ref: qs.get('ref') || '', path: qs.get('path') || ''}); }
 </script>
 </body>
 </html>
